@@ -1,0 +1,127 @@
+{
+  "info": {
+    "name": "AutoRia Clone API",
+    "description": "Платформа для продажи автомобилей",
+    "version": "1.0.0"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Ivan\", \"email\": \"ivan@test.com\", \"password\": \"123456\"}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\": \"ivan@test.com\", \"password\": \"123456\"}"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Ads",
+      "item": [
+        {
+          "name": "Get All Ads",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/ads"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Ad",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{base_url}}/api/ads",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"BMW X5 2019\", \"description\": \"Отличное состояние\", \"make\": \"BMW\", \"model\": \"X5\", \"region\": \"Киев\", \"originalPrice\": 25000, \"originalCurrency\": \"USD\"}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Ad",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{base_url}}/api/ads/{{ad_id}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Ad Analytics (PREMIUM)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{base_url}}/api/ads/{{ad_id}}/analytics"
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000"
+    },
+    {
+      "key": "token",
+      "value": "your_token_here"
+    },
+    {
+      "key": "ad_id",
+      "value": "ad_id_here"
+    }
+  ]
+}

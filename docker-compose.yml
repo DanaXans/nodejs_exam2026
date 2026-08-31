@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - MONGO_URI=mongodb://mongo:27017/autoria
+      - JWT_SECRET=secret_key
+    depends_on:
+      - mongo
+    networks:
+      - autoria-network
+
+  mongo:
+    image: mongo:6
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - autoria-network
+
+volumes:
+  mongo-data:
+
+networks:
+  autoria-network:
+    driver: bridge
