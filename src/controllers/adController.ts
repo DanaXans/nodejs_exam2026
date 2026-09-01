@@ -3,7 +3,7 @@ import {CarAd} from '../models/CarAd.js';
 import {User} from '../models/User.js';
 import {AuthRequest} from '../middleware/authMiddleware.js';
 
-const BAD_WORDS = /\b(хуй|блядь|ебать|сука|мудак|пизда|хер|ебучий|засранец|говно|дерьмо|срань)\b/gi;
+const BAD_WORDS = /пизде|хуй|блядь|ебать|сука|мудак|пизда|хер|ебучий|засранец|говно|дерьмо|срань/gi;
 const RATES = {USD_UAH: 41, EUR_UAH: 45, USD_EUR: 0.92};
 
 export const getAds = async (_req: Request, res: Response, next: NextFunction) => {
@@ -34,16 +34,17 @@ export const createAd = async (req: Request, res: Response, next: NextFunction) 
         if (!title || !description || !make || !model || !region || !originalPrice || !originalCurrency) {
             return res.status(400).json({message: 'Всі поля обов\'язкові'});
         }
+
         if (user.accountType === 'BASIC') {
             const userAdsCount = await CarAd.countDocuments({sellerId});
             if (userAdsCount >= 1) {
-                return res.status(403).json({message: 'BASIC обліковий запис: максимум 1 оголошення. Купуйте PREMIUM'});
+                return res.status(403).json({message: 'BASIC: максимум 1 оголошення'});
             }
         }
 
-        const fullText = `${title} ${description}`;
+        const fullText = `${title} ${description}`.toLowerCase();
         if (BAD_WORDS.test(fullText)) {
-            return res.status(400).json({message: 'Виявлено нецензурну лексику у оголошенні!'});
+            return res.status(400).json({message: 'Виявлено нецензурну лексику'});
         }
 
         const price = Number(originalPrice);
@@ -72,10 +73,23 @@ export const createAd = async (req: Request, res: Response, next: NextFunction) 
                 EUR: Math.round((price / RATES.EUR_UAH) * 100) / 100
             };
         } else {
-            return res.status(400).json({message: 'Невалідна валюта (USD, EUR, UAH)'});
+            return res.status(400).json({message: 'Невалідна валюта'});
         }
 
-        const newAd = await CarAd.create({sellerId, title, description, make, model, region, originalPrice: price, originalCurrency, calculatedPrices, status: 'ACTIVE', badWordsAttempts: 0, views: 0});
+        const newAd = await CarAd.create({
+            sellerId,
+            title,
+            description,
+            make,
+            model,
+            region,
+            originalPrice: price,
+            originalCurrency,
+            calculatedPrices,
+            status: 'ACTIVE',
+            badWordsAttempts: 0,
+            views: 0
+        });
 
         return res.status(201).json(newAd);
     } catch (error) {
@@ -116,7 +130,7 @@ export const getAdAnalytics = async (req: Request, res: Response, next: NextFunc
 
         const user = await User.findById(userId);
         if (user?.accountType !== 'PREMIUM') {
-            return res.status(403).json({message: 'Тільки PREMIUM користувачі мають доступ'});
+            return res.status(403).json({message: 'Тільки PREMIUM користувачі'});
         }
 
         const ad = await CarAd.findById(id);

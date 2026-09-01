@@ -48,13 +48,13 @@ export const App: React.FC = () => {
     const handleCreateAd = async (adData: any) => {
         try {
             await apiCall('/ads', {method: 'POST', body: JSON.stringify(adData)});
-            alert('✅ Оголошення додано!');
+            alert('Оголошення додано');
             setIsFormOpen(false);
             await loadAds();
         }
         catch (err: unknown) {
             const errorMessage = err instanceof Error ? err.message : 'Помилка при додаванні';
-            alert('❌ ' + errorMessage);
+            alert(errorMessage);
         }
     };
 
@@ -78,10 +78,10 @@ export const App: React.FC = () => {
         try {
             await deleteAdRequest(id);
             setAds(prevAds => prevAds.filter(ad => ((ad as any)._id || (ad as any).id) !== id));
-            alert('✅ Оголошення видалено');
+            alert('Оголошення видалено');
         }
         catch (error: any) {
-            alert('❌ ' + (error.message || 'Помилка при видаленні'));
+            alert(error.message || 'Помилка при видаленні');
         }
     };
 
@@ -110,12 +110,12 @@ export const App: React.FC = () => {
 
             <main style={{maxWidth: '1280px', margin: '0 auto', padding: '20px'}}>
                 <h1 style={{fontSize: '28px', marginBottom: '20px', fontWeight: 'bold'}}>
-                    🚗 Оголошення про продаж авто
+                    Оголошення про продаж авто
                 </h1>
 
                 {loading && (
                     <div style={{textAlign: 'center', padding: '20px', color: '#b0b0b0'}}>
-                        ⏳ Завантаження...
+                        Завантаження...
                     </div>
                 )}
 
@@ -127,7 +127,7 @@ export const App: React.FC = () => {
                         borderRadius: '8px',
                         color: '#b0b0b0'
                     }}>
-                        📭 Оголошень поки що немає
+                        Оголошень поки що немає
                     </div>
                 )}
 
@@ -174,10 +174,10 @@ export const App: React.FC = () => {
                             setUser(data.user);
                             setIsLoginOpen(false);
                             setIsRegisterMode(false);
-                            alert(isRegisterMode ? '✅ Успішна реєстрація!' : '✅ Успішний вхід!');
+                            alert(isRegisterMode ? 'Успішна реєстрація!' : 'Успішний вхід!');
                         }
                         catch (err: any) {
-                            alert('❌ ' + (err.message || 'Помилка'));
+                            alert(err.message || 'Помилка');
                         }
                     }}
                 />
