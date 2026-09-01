@@ -33,9 +33,9 @@ const carAdSchema = new Schema<ICarAd>(
         originalPrice: {type: Number, required: true},
         originalCurrency: {type: String, required: true},
         calculatedPrices: {
-            USD: {type: Number, required: true},
-            UAH: {type: Number, required: true},
-            EUR: {type: Number, required: true}
+            USD: {type: Number, default: 0},
+            UAH: {type: Number, default: 0},
+            EUR: {type: Number, default: 0}
         },
         status: {type: String, default: 'ACTIVE'},
         badWordsAttempts: {type: Number, default: 0},

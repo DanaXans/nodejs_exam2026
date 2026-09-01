@@ -32,38 +32,28 @@ export interface CalculatedPrices {
     UAH: number;
     USD: number;
     EUR: number;
-    exchangeRateDate: string;
 }
 
 export interface CarAd {
     _id: string;
     title: string;
-    brand: string;
+    make: string;
+    brand?: string;
     model: string;
     region: string;
     originalPrice: number;
-    currency: Currency;
+    originalCurrency: Currency;
+    currency?: Currency;
     calculatedPrices: CalculatedPrices;
     description: string;
-    status: 'ACTIVE' | 'PENDING' | 'INACTIVE';
-    views: {
-        total: number;
-        daily: number;
-        weekly: number;
-        monthly: number;
-    };
+    status?: string;
+    views: number;
     sellerId: string;
-    editAttempts: number;
-    createdAt: string;
+    createdAt?: string;
 }
 
 export interface AdAnalytics {
-    views: {
-        total: number;
-        daily: number;
-        weekly: number;
-        monthly: number;
-    };
+    views: number;
     avgPriceRegion: number;
     avgPriceUkraine: number;
     regionName: string;

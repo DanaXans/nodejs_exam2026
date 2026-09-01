@@ -1,96 +1,63 @@
 import React, {useState} from 'react';
-import {Currency} from '../types';
 
 interface AdFormProps {
     isOpen: boolean;
     onClose: () => void;
-    onSubmit: (data: any) => void;
+    onSubmit: (data: any) => Promise<void>;
 }
 
 export const AdForm: React.FC<AdFormProps> = ({isOpen, onClose, onSubmit}) => {
     const [title, setTitle] = useState('');
-    const [brand, setBrand] = useState('BMW');
-    const [model, setModel] = useState('X5');
-    const [region, setRegion] = useState('Киев');
-    const [price, setPrice] = useState(12000);
-    const [currency, setCurrency] = useState<Currency>(Currency.USD);
     const [description, setDescription] = useState('');
+    const [make, setMake] = useState('');
+    const [model, setModel] = useState('');
+    const [region, setRegion] = useState('');
+    const [price, setPrice] = useState('');
+    const [currency, setCurrency] = useState('USD');
+    const [loading, setLoading] = useState(false);
 
-    if (!isOpen) return null;
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        onSubmit({title, brand, model, region, originalPrice: Number(price), currency, description,});
-        onClose();
+        setLoading(true);
+        try {
+            await onSubmit({title: title || `${make} ${model}`, description, make, model, region, originalPrice: price, originalCurrency: currency});
+            setTitle('');
+            setDescription('');
+            setMake('');
+            setModel('');
+            setRegion('');
+            setPrice('');
+            setCurrency('USD');
+        } finally {
+            setLoading(false);
+        }
     };
+    if (!isOpen) return null;
     return (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl max-w-md w-full p-5 shadow-xl">
-                <div className="flex justify-between items-center pb-3 border-b mb-4">
-                    <h2 className="font-bold text-gray-800">Подати оголошення</h2>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 font-bold">✕</button>
-                </div>
-
-                <form onSubmit={handleSubmit} className="space-y-3 text-xs">
-                    <div>
-                        <label className="block font-medium mb-1">Заголовок</label>
-                        <input type="text" required value={title} onChange={(e) => setTitle(e.target.value)}
-                               className="w-full border rounded p-2 text-xs" placeholder="Продам авто"/>
+        <div style={{position: 'fixed', inset: 0, backgroundColor: 'rgba(0, 0, 0, 0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50}}>
+            <div style={{backgroundColor: '#2d2d2d', border: '1px solid #404040', borderRadius: '12px', padding: '32px', maxWidth: '500px', width: '90%', maxHeight: '80vh',overflowY: 'auto', boxShadow: '0 20px 25px rgba(0, 0, 0, 0.3)'}}>
+                <h2 style={{fontSize: '20px', fontWeight: 'bold', marginBottom: '24px', color: '#e0e0e0'}}>Додати нове оголошення</h2>
+                <form onSubmit={handleSubmit} style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
+                    <input type="text" placeholder="Заголовок оголошення (опціонально)" value={title} onChange={(e) => setTitle(e.target.value)} style={{padding: '10px 12px', backgroundColor: '#3a3a3a', color: '#e0e0e0', border: '1px solid #404040', borderRadius: '6px', fontSize: '14px', fontFamily: 'inherit'}}/>
+                    <input type="text" placeholder="Марка авто (наприклад BMW, Audi)" value={make} onChange={(e) => setMake(e.target.value)} required style={{padding: '10px 12px', backgroundColor: '#3a3a3a', color: '#e0e0e0', border: '1px solid #404040', borderRadius: '6px', fontSize: '14px', fontFamily: 'inherit'}}/>
+                    <input type="text" placeholder="Модель авто (наприклад X5, A4)" value={model} onChange={(e) => setModel(e.target.value)} required style={{padding: '10px 12px', backgroundColor: '#3a3a3a', color: '#e0e0e0', border: '1px solid #404040', borderRadius: '6px', fontSize: '14px', fontFamily: 'inherit'}}/>
+                    <input type="text" placeholder="Регіон (наприклад Київ, Львів)" value={region} onChange={(e) => setRegion(e.target.value)} required style={{padding: '10px 12px', backgroundColor: '#3a3a3a', color: '#e0e0e0', border: '1px solid #404040', borderRadius: '6px', fontSize: '14px', fontFamily: 'inherit'}}/>
+                        <div style={{display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '12px'}}>
+                         <input type="number" placeholder="Ціна" value={price} onChange={(e) => setPrice(e.target.value)} required style={{padding: '10px 12px', backgroundColor: '#3a3a3a', color: '#e0e0e0', border: '1px solid #404040', borderRadius: '6px', fontSize: '14px', fontFamily: 'inherit'}}/>
+                            <select value={currency} onChange={(e) => setCurrency(e.target.value)} style={{padding: '10px 12px', backgroundColor: '#3a3a3a', color: '#e0e0e0', border: '1px solid #404040', borderRadius: '6px', fontSize: '14px', fontFamily: 'inherit'}}>
+                            <option value="USD">USD</option>
+                            <option value="EUR">EUR</option>
+                            <option value="UAH">UAH</option>
+                        </select>
                     </div>
+                    <textarea placeholder="Опис оголошення (максимум 1000 символів)" value={description} onChange={(e) => setDescription(e.target.value)} required style={{padding: '10px 12px', backgroundColor: '#3a3a3a', color: '#e0e0e0', border: '1px solid #404040', borderRadius: '6px', fontSize: '14px', fontFamily: 'inherit', minHeight: '100px',resize: 'vertical'}}/>
 
-                    <div className="grid grid-cols-2 gap-2">
-                        <div>
-                            <label className="block font-medium mb-1">Марка</label>
-                            <select value={brand} onChange={(e) => setBrand(e.target.value)}
-                                    className="w-full border rounded p-2 text-xs">
-                                <option value="BMW">BMW</option>
-                                <option value="Audi">Audi</option>
-                                <option value="Mercedes-Benz">Mercedes-Benz</option>
-                                <option value="Toyota">Toyota</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block font-medium mb-1">Модель</label>
-                            <input type="text" required value={model} onChange={(e) => setModel(e.target.value)}
-                                   className="w-full border rounded p-2 text-xs"/>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-2">
-                        <div className="col-span-2">
-                            <label className="block font-medium mb-1">Ціна</label>
-                            <input type="number" required value={price}
-                                   onChange={(e) => setPrice(Number(e.target.value))}
-                                   className="w-full border rounded p-2 text-xs"/>
-                        </div>
-                        <div>
-                            <label className="block font-medium mb-1">Валюта</label>
-                            <select value={currency} onChange={(e) => setCurrency(e.target.value as Currency)}
-                                    className="w-full border rounded p-2 text-xs font-bold text-blue-600">
-                                <option value={Currency.USD}>USD ($)</option>
-                                <option value={Currency.UAH}>UAH (грн)</option>
-                                <option value={Currency.EUR}>EUR (€)</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label className="block font-medium mb-1">Регіон продажу</label>
-                        <input type="text" required value={region} onChange={(e) => setRegion(e.target.value)}
-                               className="w-full border rounded p-2 text-xs"/>
-                    </div>
-
-                    <div>
-                        <label className="block font-medium mb-1">Опис</label>
-                        <textarea rows={3} required value={description} onChange={(e) => setDescription(e.target.value)}
-                                  className="w-full border rounded p-2 text-xs" placeholder="Опис автомобіля..."/>
-                    </div>
-
-                    <div className="flex justify-end space-x-2 pt-3 border-t">
-                        <button type="button" onClick={onClose}
-                                className="px-3 py-1.5 border rounded text-gray-600">Скасування
+                    <div style={{display: 'flex', gap: '12px', marginTop: '8px'}}>
+                        <button type="submit" disabled={loading} style={{flex: 1, padding: '10px 16px', backgroundColor: loading ? '#5a5a5a' : '#2b7dd4', color: 'white', border: 'none', borderRadius: '6px', cursor: loading ? 'not-allowed' : 'pointer', fontSize: '14px', fontWeight: '500', transition: 'all 0.2s'}}>
+                            {loading ? ' Завантаження...' : ' Додати'}
                         </button>
-                        <button type="submit"
-                                className="px-4 py-1.5 bg-blue-600 text-white rounded font-medium">Зберегти
+                        <button type="button" onClick={onClose} style={{flex: 1, padding: '10px 16px', backgroundColor: '#3a3a3a', color: '#e0e0e0', border: '1px solid #404040', borderRadius: '6px', cursor: 'pointer', fontSize: '14px'}}>
+                            Скасувати
                         </button>
                     </div>
                 </form>
