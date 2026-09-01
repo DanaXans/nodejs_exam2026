@@ -51,8 +51,7 @@ export const App: React.FC = () => {
             alert('Оголошення додано');
             setIsFormOpen(false);
             await loadAds();
-        }
-        catch (err: unknown) {
+        } catch (err: unknown) {
             const errorMessage = err instanceof Error ? err.message : 'Помилка при додаванні';
             alert(errorMessage);
         }
@@ -62,8 +61,7 @@ export const App: React.FC = () => {
         try {
             const res = await apiCall<AdAnalytics>(`/ads/${ad._id}/analytics`);
             setAnalytics(res);
-        }
-        catch {
+        } catch {
             setAnalytics({
                 views: ad.views,
                 avgPriceRegion: ad.calculatedPrices.USD * 0.96,
@@ -79,8 +77,7 @@ export const App: React.FC = () => {
             await deleteAdRequest(id);
             setAds(prevAds => prevAds.filter(ad => ((ad as any)._id || (ad as any).id) !== id));
             alert('Оголошення видалено');
-        }
-        catch (error: any) {
+        } catch (error: any) {
             alert(error.message || 'Помилка при видаленні');
         }
     };
@@ -106,6 +103,7 @@ export const App: React.FC = () => {
                         localStorage.setItem('user', JSON.stringify(updatedUser));
                     }
                 }}
+                onOpenLogin={() => setIsLoginOpen(true)}
             />
 
             <main style={{maxWidth: '1280px', margin: '0 auto', padding: '20px'}}>
@@ -163,7 +161,7 @@ export const App: React.FC = () => {
                             : {email, password};
 
                         try {
-                            const data = await apiCall<{token: string; user: User}>(endpoint, {
+                            const data = await apiCall<{ token: string; user: User }>(endpoint, {
                                 method: 'POST',
                                 body: JSON.stringify(payload),
                             });
@@ -175,8 +173,7 @@ export const App: React.FC = () => {
                             setIsLoginOpen(false);
                             setIsRegisterMode(false);
                             alert(isRegisterMode ? 'Успішна реєстрація!' : 'Успішний вхід!');
-                        }
-                        catch (err: any) {
+                        } catch (err: any) {
                             alert(err.message || 'Помилка');
                         }
                     }}

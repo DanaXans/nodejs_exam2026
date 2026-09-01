@@ -6,10 +6,56 @@ import {AuthRequest} from '../middleware/authMiddleware.js';
 const BAD_WORDS = /пизде|хуй|блядь|ебать|сука|мудак|пизда|хер|ебучий|засранец|говно|дерьмо|срань/gi;
 const RATES = {USD_UAH: 41, EUR_UAH: 45, USD_EUR: 0.92};
 
+const MOCK_ADS = [
+    {
+        sellerId: 'mock-7',
+        title: 'BMW 3 Series 2019',
+        description: 'Стан ідеал!',
+        make: 'BMW',
+        model: '3 Series',
+        region: 'Київ',
+        originalPrice: 25000,
+        originalCurrency: 'USD',
+        calculatedPrices: {USD: 25000, UAH: 1025000, EUR: 23000},
+        status: 'ACTIVE',
+        badWordsAttempts: 0,
+        views: 142
+    },
+    {
+        sellerId: 'mock-12',
+        title: 'Audi A4 Allroad 2020',
+        description: 'Привезена з Німеччини...стан 9/10, за всіма питаннями пишіть',
+        make: 'Audi',
+        model: 'A4',
+        region: 'Львів',
+        originalPrice: 31000,
+        originalCurrency: 'USD',
+        calculatedPrices: {USD: 31000, UAH: 1271000, EUR: 28520},
+        status: 'ACTIVE',
+        badWordsAttempts: 0,
+        views: 89
+    },
+    {
+        sellerId: 'mock-146',
+        title: 'Volkswagen Passat B8 2018',
+        description: 'Продаю авто, без пробігу, в чудовому стані. Пишіть!',
+        make: 'Volkswagen',
+        model: 'Passat',
+        region: 'Одеса',
+        originalPrice: 16500,
+        originalCurrency: 'USD',
+        calculatedPrices: {USD: 16500, UAH: 676500, EUR: 15180},
+        status: 'ACTIVE',
+        badWordsAttempts: 0,
+        views: 210
+    }
+];
+
 export const getAds = async (_req: Request, res: Response, next: NextFunction) => {
     try {
-        const ads = await CarAd.find().lean();
-        return res.json(ads);
+        const dbAds = await CarAd.find().lean();
+        const allAds = [...MOCK_ADS, ...dbAds];
+        return res.json(allAds);
     } catch (error) {
         next(error);
     }
@@ -103,6 +149,10 @@ export const deleteAd = async (req: Request, res: Response, next: NextFunction) 
         const {id} = req.params;
         const userId = authReq.user?.userId;
         const userRole = authReq.user?.role;
+
+        if (String(id).startsWith('mock-')) {
+            return res.status(403).json({message: 'Нельзя удалить пример'});
+        }
 
         const ad = await CarAd.findById(id);
 
