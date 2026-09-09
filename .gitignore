@@ -1,2 +1,8 @@
-.idea
 .env
+autoria-frontend/.env
+node_modules
+dist
+autoria-frontend/node_modules
+autoria-frontend/dist
+.idea
+*.iml

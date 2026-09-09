@@ -1,34 +1,52 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import dns from 'dns';
 import mongoose from 'mongoose';
 import apiRouter from './routes/index.js';
 import {errorMiddleware} from './middleware/errorMiddleware.js';
 
-dns.setServers(['8.8.8.8', '8.8.4.4']);
 dotenv.config();
 
+const PORT = Number(process.env.PORT) || 5000;
+const MONGO_URI = process.env.MONGO_URI;
+const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
+
+if (!MONGO_URI) {
+    throw new Error('MONGO_URI is not defined in .env');
+}
+
 const app = express();
-app.use(cors({
-    origin: 'http://localhost:5173',
-    credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
+
+app.use(
+    cors({
+        origin: CLIENT_URL,
+        credentials: true,
+        allowedHeaders: ['Content-Type', 'Authorization'],
+        methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'],
+    }),
+);
+
 app.use(express.json());
 
-const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://danaxans_db_user:uZpgyZbyodWl4p61@cluster1.rpijwzp.mongodb.net/autoria?retryWrites=true&w=majority';
+app.get('/health', (_req, res) => {
+    res.json({status: 'ok'});
+});
 
-mongoose
-    .connect(MONGO_URI, {serverSelectionTimeoutMS: 5000})
-    .then(() => console.log(' Успешно подключено к MongoDB!'))
-    .catch((err) => {
-        console.error(' Ошибка MongoDB:', err);
-    });
-app.use(express.json());
 app.use('/api', apiRouter);
 app.use(errorMiddleware);
 
-app.listen(5000, () => {
-    console.log(' Сервер запущен на http://localhost:5000');
-});
+const startServer = async () => {
+    try {
+        await mongoose.connect(MONGO_URI);
+        console.log('Успішно підключено до MongoDB');
+
+        app.listen(PORT, () => {
+            console.log(`Сервер запущено на http://localhost:${PORT}`);
+        });
+    } catch (error) {
+        console.error('Не вдалося запустити сервер:', error);
+        process.exit(1);
+    }
+};
+
+void startServer();
