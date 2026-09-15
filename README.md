@@ -51,7 +51,6 @@ http://localhost:5000
 ```
 
 2. Frontend
-3.
 
 ```bash
 cd autoria-frontend
