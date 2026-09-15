@@ -1,23 +1,23 @@
 export type UserRole = 'BUYER' | 'SELLER' | 'MANAGER' | 'ADMIN';
 export const UserRole = {
-    BUYER: 'BUYER' as const,
-    SELLER: 'SELLER' as const,
-    MANAGER: 'MANAGER' as const,
-    ADMIN: 'ADMIN' as const,
-};
+    BUYER: 'BUYER',
+    SELLER: 'SELLER',
+    MANAGER: 'MANAGER',
+    ADMIN: 'ADMIN',
+} as const;
 
 export type AccountType = 'BASIC' | 'PREMIUM';
 export const AccountType = {
-    BASIC: 'BASIC' as const,
-    PREMIUM: 'PREMIUM' as const,
-};
+    BASIC: 'BASIC',
+    PREMIUM: 'PREMIUM',
+} as const;
 
 export type Currency = 'UAH' | 'USD' | 'EUR';
 export const Currency = {
-    UAH: 'UAH' as const,
-    USD: 'USD' as const,
-    EUR: 'EUR' as const,
-};
+    UAH: 'UAH',
+    USD: 'USD',
+    EUR: 'EUR',
+} as const;
 
 export interface User {
     id: string;

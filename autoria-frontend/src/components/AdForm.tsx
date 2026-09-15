@@ -53,12 +53,8 @@ export const AdForm: React.FC<AdFormProps> = ({isOpen, onClose, onSubmit}) => {
                     <textarea placeholder="Опис оголошення (максимум 1000 символів)" value={description} onChange={(e) => setDescription(e.target.value)} required style={{padding: '10px 12px', backgroundColor: '#3a3a3a', color: '#e0e0e0', border: '1px solid #404040', borderRadius: '6px', fontSize: '14px', fontFamily: 'inherit', minHeight: '100px',resize: 'vertical'}}/>
 
                     <div style={{display: 'flex', gap: '12px', marginTop: '8px'}}>
-                        <button type="submit" disabled={loading} style={{flex: 1, padding: '10px 16px', backgroundColor: loading ? '#5a5a5a' : '#2b7dd4', color: 'white', border: 'none', borderRadius: '6px', cursor: loading ? 'not-allowed' : 'pointer', fontSize: '14px', fontWeight: '500', transition: 'all 0.2s'}}>
-                            {loading ? ' Завантаження...' : ' Додати'}
-                        </button>
-                        <button type="button" onClick={onClose} style={{flex: 1, padding: '10px 16px', backgroundColor: '#3a3a3a', color: '#e0e0e0', border: '1px solid #404040', borderRadius: '6px', cursor: 'pointer', fontSize: '14px'}}>
-                            Скасувати
-                        </button>
+                        <button type="submit" disabled={loading} style={{flex: 1, padding: '10px 16px', backgroundColor: loading ? '#5a5a5a' : '#2b7dd4', color: 'white', border: 'none', borderRadius: '6px', cursor: loading ? 'not-allowed' : 'pointer', fontSize: '14px', fontWeight: '500', transition: 'all 0.2s'}}>{loading ? ' Завантаження...' : ' Додати'}</button>
+                        <button type="button" onClick={onClose} style={{flex: 1, padding: '10px 16px', backgroundColor: '#3a3a3a', color: '#e0e0e0', border: '1px solid #404040', borderRadius: '6px', cursor: 'pointer', fontSize: '14px'}}>Скасувати</button>
                     </div>
                 </form>
             </div>

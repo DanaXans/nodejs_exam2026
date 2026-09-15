@@ -16,7 +16,6 @@ if (!MONGO_URI) {
 }
 
 const app = express();
-
 app.use(
     cors({
         origin: CLIENT_URL,
@@ -27,7 +26,6 @@ app.use(
 );
 
 app.use(express.json());
-
 app.get('/health', (_req, res) => {
     res.json({status: 'ok'});
 });
@@ -39,7 +37,6 @@ const startServer = async () => {
     try {
         await mongoose.connect(MONGO_URI);
         console.log('Успішно підключено до MongoDB');
-
         app.listen(PORT, () => {
             console.log(`Сервер запущено на http://localhost:${PORT}`);
         });

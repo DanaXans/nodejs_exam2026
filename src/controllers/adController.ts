@@ -4,7 +4,7 @@ import {User} from '../models/User.js';
 import {AuthRequest} from '../middleware/authMiddleware.js';
 import {AccountType, AdStatus, UserRole,} from '../types/index.js';
 
-const BAD_WORDS = /пизде|хуй|блядь|ебать|сука|мудак|пизда|хер|ебучий|засранец|говно|дерьмо|срань/i;
+const BAD_WORDS = /пиздец|хуй|блядь|ебать|сука|мудак|пизда|хер|ебучий|засранец|говно|дерьмо|срань/i;
 const RATES = {USD_UAH: 41, EUR_UAH: 45, USD_EUR: 0.92};
 const MOCK_ADS = [
     {
@@ -151,7 +151,7 @@ export const deleteAd = async (req: Request, res: Response, next: NextFunction) 
         const userRole = authReq.user?.role;
 
         if (String(id).startsWith('mock-')) {
-            return res.status(403).json({message: 'Нельзя удалить пример'});
+            return res.status(403).json({message: 'Неможливо видалити приклад'});
         }
         const ad = await CarAd.findById(id);
 

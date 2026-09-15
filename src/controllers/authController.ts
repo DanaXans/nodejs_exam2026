@@ -19,26 +19,8 @@ const createToken = (user: { _id: unknown; role: UserRole; accountType: AccountT
     );
 };
 
-const serializeUser = (user: {
-    _id: unknown;
-    name: string;
-    email: string;
-    role: UserRole;
-    accountType: AccountType;
-    permissions?: string[];
-}) => ({
-    id: String(user._id),
-    name: user.name,
-    email: user.email,
-    role: user.role,
-    accountType: user.accountType,
-    permissions: user.permissions ?? [],
-});
-export const register = async (
-    req: Request,
-    res: Response,
-    next: NextFunction,
-) => {
+const serializeUser = (user: { _id: unknown; name: string; email: string; role: UserRole; accountType: AccountType; permissions?: string[]; }) => ({id: String(user._id), name: user.name, email: user.email, role: user.role, accountType: user.accountType, permissions: user.permissions ?? [],});
+export const register = async (req: Request, res: Response, next: NextFunction,) => {
     try {
         const {name, email, password} = req.body;
         if (!name || !email || !password) {
@@ -75,14 +57,9 @@ export const register = async (
         next(error);
     }
 };
-export const login = async (
-    req: Request,
-    res: Response,
-    next: NextFunction,
-) => {
+export const login = async (req: Request, res: Response, next: NextFunction,) => {
     try {
         const {email, password} = req.body;
-
         if (!email || !password) {
             return res.status(400).json({
                 message: 'Email та пароль є обов’язковими',
@@ -111,14 +88,9 @@ export const login = async (
         next(error);
     }
 };
-export const upgradeToPremium = async (
-    req: AuthRequest,
-    res: Response,
-    next: NextFunction,
-) => {
+export const upgradeToPremium = async (req: AuthRequest, res: Response, next: NextFunction,) => {
     try {
         const userId = req.user?.userId;
-
         if (!userId) {
             return res.status(401).json({
                 message: 'Користувач не авторизований',

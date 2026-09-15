@@ -53,7 +53,7 @@ export const requirePermission = (...permissions: string[]) => {
         const hasAllPermissions = permissions.every((permission) => userPermissions.includes(permission),);
         if (!hasAllPermissions) {
             return res.status(403).json({
-                message: 'Недостатньо permissions для цієї дії',
+                message: 'Недостатньо прав для цієї дії',
             });
         }
         next();

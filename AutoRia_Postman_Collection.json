@@ -1,7 +1,7 @@
 {
   "info": {
-    "name": "AutoRia Clone API",
-    "description": "Платформа для продажи автомобилей",
+    "name": "AutoRia.clone",
+    "description": "Платформа для продажу авто",
     "version": "1.0.0"
   },
   "item": [

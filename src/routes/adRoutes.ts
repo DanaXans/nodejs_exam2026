@@ -3,7 +3,6 @@ import {createAd, deleteAd, getAdAnalytics, getAds} from '../controllers/adContr
 import {authMiddleware} from '../middleware/authMiddleware.js';
 
 const router = Router();
-
 router.get('/', getAds);
 router.post('/', authMiddleware, createAd);
 router.delete('/:id', authMiddleware, deleteAd);
