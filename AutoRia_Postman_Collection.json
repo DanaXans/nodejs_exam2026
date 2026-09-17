@@ -1,127 +1,323 @@
 {
   "info": {
-    "name": "AutoRia.clone",
-    "description": "Платформа для продажу авто",
-    "version": "1.0.0"
+    "_postman_id": "a9b1c2d3-e4f5-4a6b-8c7d-0e1f2a3b4c5d",
+    "name": "AutoRia Exam 2026 - Test Flow",
+    "description": "Колекція запитів для перевірки виконання ТЗ AutoRia Clone.\nПослідовний flow: Реєстрація -> Логін -> Створення оголошення (Basic) -> Перевірка ліміту -> Upgrade до Premium -> Створення другого оголошення (Premium) -> Отримання списку -> Аналітика -> Видалення.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
-  "item": [
-    {
-      "name": "Auth",
-      "item": [
-        {
-          "name": "Register",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": "{{base_url}}/api/auth/register",
-            "body": {
-              "mode": "raw",
-              "raw": "{\"name\": \"Ivan\", \"email\": \"ivan@test.com\", \"password\": \"123456\"}"
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Login",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": "{{base_url}}/api/auth/login",
-            "body": {
-              "mode": "raw",
-              "raw": "{\"email\": \"ivan@test.com\", \"password\": \"123456\"}"
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Ads",
-      "item": [
-        {
-          "name": "Get All Ads",
-          "request": {
-            "method": "GET",
-            "url": "{{base_url}}/api/ads"
-          },
-          "response": []
-        },
-        {
-          "name": "Create Ad",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": "{{base_url}}/api/ads",
-            "body": {
-              "mode": "raw",
-              "raw": "{\"title\": \"BMW X5 2019\", \"description\": \"Отличное состояние\", \"make\": \"BMW\", \"model\": \"X5\", \"region\": \"Киев\", \"originalPrice\": 25000, \"originalCurrency\": \"USD\"}"
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Delete Ad",
-          "request": {
-            "method": "DELETE",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": "{{base_url}}/api/ads/{{ad_id}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Get Ad Analytics (PREMIUM)",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": "{{base_url}}/api/ads/{{ad_id}}/analytics"
-          },
-          "response": []
-        }
-      ]
-    }
-  ],
   "variable": [
     {
-      "key": "base_url",
-      "value": "http://localhost:5000"
+      "key": "baseUrl",
+      "value": "http://localhost:5000/api",
+      "type": "string"
     },
     {
       "key": "token",
-      "value": "your_token_here"
+      "value": "",
+      "type": "string"
     },
     {
-      "key": "ad_id",
-      "value": "ad_id_here"
+      "key": "adId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "01. Register Seller",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 201 || pm.response.code === 200) {",
+              "    const data = pm.response.json();",
+              "    if (data.token) {",
+              "        pm.collectionVariables.set('token', data.token);",
+              "    }",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Dana Seller\",\n  \"email\": \"seller_exam@test.com\",\n  \"password\": \"Password123!\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/register",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "register"
+          ]
+        },
+        "description": "Реєстрація нового користувача з роллю SELLER та типом BASIC за замовчуванням."
+      }
+    },
+    {
+      "name": "02. Login Seller",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "    const data = pm.response.json();",
+              "    if (data.token) {",
+              "        pm.collectionVariables.set('token', data.token);",
+              "    }",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"seller_exam@test.com\",\n  \"password\": \"Password123!\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        },
+        "description": "Авторизація. Токен автоматично зберігається у змінну {{token}}."
+      }
+    },
+    {
+      "name": "03. Create 1st Car Ad (BASIC)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 201 || pm.response.code === 200) {",
+              "    const data = pm.response.json();",
+              "    const createdAd = data.ad || data;",
+              "    if (createdAd._id || createdAd.id) {",
+              "        pm.collectionVariables.set('adId', createdAd._id || createdAd.id);",
+              "    }",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"BMW X5 2021 в ідеальному стані\",\n  \"description\": \"Офіційне авто, перший власник, повне сервісне обслуговування.\",\n  \"make\": \"BMW\",\n  \"model\": \"X5\",\n  \"region\": \"Київ\",\n  \"originalPrice\": 45000,\n  \"originalCurrency\": \"USD\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/ads",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "ads"
+          ]
+        },
+        "description": "Створення першого авто для BASIC акаунта. ID зберігається у {{adId}}."
+      }
+    },
+    {
+      "name": "04. Create 2nd Car Ad (BASIC - Expect 403 Limit Error)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Audi Q7 2020 Quattro\",\n  \"description\": \"Спроба викласти друге оголошення на базовому акаунті.\",\n  \"make\": \"Audi\",\n  \"model\": \"Q7\",\n  \"region\": \"Львівська область\",\n  \"originalPrice\": 40000,\n  \"originalCurrency\": \"USD\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/ads",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "ads"
+          ]
+        },
+        "description": "Перевірка обмеження: очікується 403 (BASIC: максимум 1 оголошення)."
+      }
+    },
+    {
+      "name": "05. Upgrade to Premium",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "    const data = pm.response.json();",
+              "    if (data.token) {",
+              "        pm.collectionVariables.set('token', data.token);",
+              "    }",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/upgrade-to-premium",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "upgrade-to-premium"
+          ]
+        },
+        "description": "Mock-апгрейд до PREMIUM. Оновлений токен автоматично записується у {{token}}."
+      }
+    },
+    {
+      "name": "06. Create 2nd Car Ad (PREMIUM - Success)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Audi Q7 2020 Quattro\",\n  \"description\": \"Друге авто успішно створюється після отримання статусу PREMIUM.\",\n  \"make\": \"Audi\",\n  \"model\": \"Q7\",\n  \"region\": \"Львівська область\",\n  \"originalPrice\": 40000,\n  \"originalCurrency\": \"USD\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/ads",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "ads"
+          ]
+        },
+        "description": "Створення другого оголошення без обмежень (PREMIUM)."
+      }
+    },
+    {
+      "name": "07. Get All Ads",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/ads",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "ads"
+          ]
+        },
+        "description": "Каталог оголошень з розрахунком валют (USD, EUR, UAH)."
+      }
+    },
+    {
+      "name": "08. Get Ad Analytics (PREMIUM Only)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/ads/{{adId}}/analytics",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "ads",
+            "{{adId}}",
+            "analytics"
+          ]
+        },
+        "description": "Аналітика для PREMIUM: перегляди, середня ціна по регіону та Україні."
+      }
+    },
+    {
+      "name": "09. Delete Ad",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/ads/{{adId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "ads",
+            "{{adId}}"
+          ]
+        },
+        "description": "Видалення оголошення."
+      }
     }
   ]
 }
