@@ -1,11 +1,14 @@
 import {Router} from 'express';
-import {createAd, deleteAd, getAdAnalytics, getAds} from '../controllers/adController.js';
-import {authMiddleware} from '../middleware/authMiddleware.js';
+import {createAd, deleteAd, getAd, getAdAnalytics, getAds, updateAd} from '../controllers/adController.js';
+import {authMiddleware, optionalAuth} from '../middleware/authMiddleware.js';
 
 const router = Router();
-router.get('/', getAds);
-router.post('/', authMiddleware, createAd);
-router.delete('/:id', authMiddleware, deleteAd);
+
+router.get('/', optionalAuth, getAds);
 router.get('/:id/analytics', authMiddleware, getAdAnalytics);
+router.get('/:id', optionalAuth, getAd);
+router.post('/', authMiddleware, createAd);
+router.patch('/:id', authMiddleware, updateAd);
+router.delete('/:id', authMiddleware, deleteAd);
 
 export default router;

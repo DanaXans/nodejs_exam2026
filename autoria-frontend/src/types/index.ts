@@ -1,23 +1,7 @@
 export type UserRole = 'BUYER' | 'SELLER' | 'MANAGER' | 'ADMIN';
-export const UserRole = {
-    BUYER: 'BUYER',
-    SELLER: 'SELLER',
-    MANAGER: 'MANAGER',
-    ADMIN: 'ADMIN',
-} as const;
-
 export type AccountType = 'BASIC' | 'PREMIUM';
-export const AccountType = {
-    BASIC: 'BASIC',
-    PREMIUM: 'PREMIUM',
-} as const;
-
 export type Currency = 'UAH' | 'USD' | 'EUR';
-export const Currency = {
-    UAH: 'UAH',
-    USD: 'USD',
-    EUR: 'EUR',
-} as const;
+export type AdStatus = 'ACTIVE' | 'PENDING_EDIT' | 'INACTIVE';
 
 export interface User {
     id: string;
@@ -25,7 +9,10 @@ export interface User {
     email: string;
     role: UserRole;
     accountType: AccountType;
-    token?: string;
+}
+
+export interface PublicUser extends User {
+    isBanned: boolean;
 }
 
 export interface CalculatedPrices {
@@ -38,23 +25,47 @@ export interface CarAd {
     _id: string;
     title: string;
     make: string;
-    brand?: string;
     model: string;
     region: string;
     originalPrice: number;
     originalCurrency: Currency;
-    currency?: Currency;
     calculatedPrices: CalculatedPrices;
     description: string;
-    status?: string;
+    status: AdStatus;
+    badWordsAttempts: number;
     views: number;
     sellerId: string;
+    sellerName: string;
+    sellerEmail: string;
     createdAt?: string;
+    message?: string;
+}
+
+export interface AdInput {
+    title: string;
+    description: string;
+    make: string;
+    model: string;
+    region: string;
+    originalPrice: number;
+    originalCurrency: Currency;
 }
 
 export interface AdAnalytics {
     views: number;
+    viewsDay: number;
+    viewsWeek: number;
+    viewsMonth: number;
     avgPriceRegion: number;
     avgPriceUkraine: number;
     regionName: string;
+    currency: Currency;
+}
+
+export interface BrandRequest {
+    id: string;
+    make: string;
+    model: string;
+    sellerId: string;
+    createdAt: string;
 }

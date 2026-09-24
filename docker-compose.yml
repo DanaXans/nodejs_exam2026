@@ -8,6 +8,8 @@ services:
     environment:
       - MONGO_URI=mongodb://mongo:27017/autoria
       - JWT_SECRET=secret_key
+      - ADMIN_EMAIL=admin@autoria.local
+      - ADMIN_PASSWORD=admin123
     depends_on:
       - mongo
     networks:
