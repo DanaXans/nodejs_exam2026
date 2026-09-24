@@ -1,12 +1,12 @@
 import {Router} from 'express';
 import {getBrands, listMissingBrands, reportMissingBrand} from '../controllers/brandController.js';
-import {authMiddleware, requireRole} from '../middleware/authMiddleware.js';
-import {UserRole} from '../types/index.js';
+import {authMiddleware, requirePermission} from '../middleware/authMiddleware.js';
+import {Permission} from '../permissions.js';
 
 const router = Router();
 
 router.get('/', getBrands);
-router.post('/missing', authMiddleware, requireRole(UserRole.SELLER), reportMissingBrand);
-router.get('/missing', authMiddleware, requireRole(UserRole.ADMIN), listMissingBrands);
+router.post('/missing', authMiddleware, requirePermission(Permission.BRAND_REPORT), reportMissingBrand);
+router.get('/missing', authMiddleware, requirePermission(Permission.BRAND_REVIEW), listMissingBrands);
 
 export default router;

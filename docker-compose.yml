@@ -10,6 +10,9 @@ services:
       - JWT_SECRET=secret_key
       - ADMIN_EMAIL=admin@autoria.local
       - ADMIN_PASSWORD=admin123
+      - MANAGER_EMAIL=manager@autoria.local
+      - USE_MOCK_RATES=true
+      - CLIENT_URL=http://localhost:5173
     depends_on:
       - mongo
     networks:

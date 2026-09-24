@@ -1,6 +1,8 @@
 export interface ExchangeRates {
     USD_UAH: number;
     EUR_UAH: number;
+    source: 'privatbank' | 'mock';
+    date: string;
 }
 
 export interface CalculatedPrices {
@@ -9,17 +11,30 @@ export interface CalculatedPrices {
     UAH: number;
 }
 
-const FALLBACK_RATES: ExchangeRates = {USD_UAH: 41.5, EUR_UAH: 45.2};
-const DAY_MS = 24 * 60 * 60 * 1000;
+const MOCK_RATES = {USD_UAH: 41.5, EUR_UAH: 45.2};
 const PRIVAT_URL = 'https://api.privatbank.ua/p24api/pubinfo?json&exchange&coursid=5';
 
-let cached: {rates: ExchangeRates; updatedAt: number} | null = null;
+let cached: ExchangeRates | null = null;
+
+const today = () => new Date().toISOString().slice(0, 10);
+
+const mockRates = (): ExchangeRates => ({
+    ...MOCK_RATES,
+    source: 'mock',
+    date: today(),
+});
 
 const roundPrice = (value: number): number => Math.round(value * 100) / 100;
 
 export const getRates = async (): Promise<ExchangeRates> => {
-    if (cached && Date.now() - cached.updatedAt < DAY_MS) {
-        return cached.rates;
+    const date = today();
+    if (cached?.date === date) {
+        return cached;
+    }
+
+    if (process.env.USE_MOCK_RATES === 'true') {
+        cached = mockRates();
+        return cached;
     }
 
     try {
@@ -35,11 +50,12 @@ export const getRates = async (): Promise<ExchangeRates> => {
             throw new Error('PrivatBank rates are missing');
         }
 
-        cached = {rates: {USD_UAH: usd, EUR_UAH: eur}, updatedAt: Date.now()};
-        return cached.rates;
+        cached = {USD_UAH: usd, EUR_UAH: eur, source: 'privatbank', date};
+        return cached;
     } catch (error) {
-        console.error('Не вдалося оновити курс ПриватБанку, використано останній відомий:', error);
-        return cached?.rates ?? FALLBACK_RATES;
+        console.error('Не вдалося оновити курс ПриватБанку, використано mock:', error);
+        cached = mockRates();
+        return cached;
     }
 };
 

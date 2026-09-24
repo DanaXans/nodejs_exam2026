@@ -21,6 +21,13 @@ export interface CalculatedPrices {
     EUR: number;
 }
 
+export interface ExchangeRatesUsed {
+    USD_UAH: number;
+    EUR_UAH: number;
+    source: 'privatbank' | 'mock';
+    date: string;
+}
+
 export interface CarAd {
     _id: string;
     title: string;
@@ -30,6 +37,7 @@ export interface CarAd {
     originalPrice: number;
     originalCurrency: Currency;
     calculatedPrices: CalculatedPrices;
+    exchangeRatesUsed?: ExchangeRatesUsed;
     description: string;
     status: AdStatus;
     badWordsAttempts: number;
@@ -60,6 +68,15 @@ export interface AdAnalytics {
     avgPriceUkraine: number;
     regionName: string;
     currency: Currency;
+}
+
+export interface SentEmail {
+    id: string;
+    to: string;
+    subject: string;
+    body: string;
+    adId: string;
+    createdAt: string;
 }
 
 export interface BrandRequest {

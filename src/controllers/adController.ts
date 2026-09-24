@@ -7,6 +7,8 @@ import {AccountType, AdStatus, Currency, UserRole} from '../types/index.js';
 import {isKnownCar} from '../data/brands.js';
 import {containsProfanity} from '../utils/profanity.js';
 import {calculatePrices, getRates} from '../services/currencyService.js';
+import {sendManagerEmail} from '../services/emailService.js';
+import {Permission} from '../permissions.js';
 
 const MAX_PROFANITY_ATTEMPTS = 3;
 
@@ -25,6 +27,7 @@ const toDto = (ad: ICarAd, seller?: SellerInfo | null) => ({
     originalPrice: ad.originalPrice,
     originalCurrency: ad.originalCurrency,
     calculatedPrices: ad.calculatedPrices,
+    exchangeRatesUsed: ad.exchangeRatesUsed,
     status: ad.status,
     badWordsAttempts: ad.badWordsAttempts,
     views: ad.views,
@@ -34,10 +37,6 @@ const toDto = (ad: ICarAd, seller?: SellerInfo | null) => ({
 const loadSellers = async (sellerIds: Array<Types.ObjectId | string>) => {
     const sellers = await User.find({_id: {$in: sellerIds}}).select('name email');
     return new Map(sellers.map((seller) => [String(seller._id), {name: seller.name, email: seller.email}]));
-};
-
-const notifyManager = (adId: string, reason: string) => {
-    console.log(`[MANAGER] Оголошення ${adId}: ${reason}`);
 };
 
 const moderateText = (title: string, description: string, previousAttempts: number) => {
@@ -89,7 +88,7 @@ const readAdInput = (body: Record<string, unknown>) => {
     return {title, description, make, model, region, originalCurrency: originalCurrency as Currency, originalPrice};
 };
 
-const isStaff = (role?: UserRole) => role === UserRole.MANAGER || role === UserRole.ADMIN;
+const canReview = (req: AuthRequest) => req.user?.permissions.includes(Permission.AD_REVIEW) ?? false;
 
 const readId = (value: string | string[] | undefined): string | null => {
     const id = Array.isArray(value) ? value[0] : value;
@@ -102,7 +101,7 @@ const readId = (value: string | string[] | undefined): string | null => {
 export const getAds = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const userId = req.user?.userId;
-        const filter = isStaff(req.user?.role)
+        const filter = canReview(req)
             ? {}
             : userId
                 ? {$or: [{status: AdStatus.ACTIVE}, {sellerId: userId}]}
@@ -129,11 +128,11 @@ export const getAd = async (req: AuthRequest, res: Response, next: NextFunction)
         }
 
         const isOwner = req.user?.userId === String(ad.sellerId);
-        if (ad.status !== AdStatus.ACTIVE && !isOwner && !isStaff(req.user?.role)) {
+        if (ad.status !== AdStatus.ACTIVE && !isOwner && !canReview(req)) {
             return res.status(404).json({message: 'Оголошення не знайдено'});
         }
 
-        if (ad.status === AdStatus.ACTIVE && !isOwner && !isStaff(req.user?.role)) {
+        if (ad.status === AdStatus.ACTIVE && !isOwner && !canReview(req)) {
             ad.viewDates = ad.viewDates ?? [];
             ad.viewDates.push(new Date());
             ad.views = ad.viewDates.length;
@@ -191,6 +190,7 @@ export const createAd = async (req: AuthRequest, res: Response, next: NextFuncti
             originalPrice: input.originalPrice,
             originalCurrency: input.originalCurrency,
             calculatedPrices: calculatePrices(input.originalPrice, input.originalCurrency, rates),
+            exchangeRatesUsed: rates,
             status: moderation.status,
             badWordsAttempts: moderation.attempts,
             views: 0,
@@ -198,7 +198,7 @@ export const createAd = async (req: AuthRequest, res: Response, next: NextFuncti
         });
 
         if (moderation.status === AdStatus.INACTIVE) {
-            notifyManager(String(ad._id), 'нецензурна лексика після 3 спроб');
+            await sendManagerEmail(String(ad._id), 'нецензурна лексика після 3 спроб');
         }
 
         return res.status(201).json({
@@ -244,13 +244,14 @@ export const updateAd = async (req: AuthRequest, res: Response, next: NextFuncti
             originalPrice: input.originalPrice,
             originalCurrency: input.originalCurrency,
             calculatedPrices: calculatePrices(input.originalPrice, input.originalCurrency, rates),
+            exchangeRatesUsed: rates,
             status: moderation.status,
             badWordsAttempts: moderation.attempts,
         });
         await ad.save();
 
         if (moderation.status === AdStatus.INACTIVE) {
-            notifyManager(String(ad._id), 'нецензурна лексика після 3 спроб');
+            await sendManagerEmail(String(ad._id), 'нецензурна лексика після 3 спроб');
         }
 
         const seller = await User.findById(ad.sellerId).select('name email');
@@ -276,7 +277,8 @@ export const deleteAd = async (req: AuthRequest, res: Response, next: NextFuncti
         }
 
         const isOwner = String(ad.sellerId) === req.user?.userId;
-        if (!isOwner && !isStaff(req.user?.role)) {
+        const canDeleteAny = req.user?.permissions.includes(Permission.AD_DELETE_ANY) ?? false;
+        if (!isOwner && !canDeleteAny) {
             return res.status(403).json({message: 'Немає прав для видалення'});
         }
 
