@@ -33,18 +33,23 @@ export const AdCard = ({ad, user, onOpen, onEdit, onShowAnalytics, onDelete}: Ad
                 <p className="ad-card-info"><strong>Марка:</strong> {ad.make}</p>
                 <p className="ad-card-info"><strong>Модель:</strong> {ad.model}</p>
                 <p className="ad-card-info"><strong>Регіон:</strong> {ad.region}</p>
-                <p className="ad-card-price">{ad.originalPrice} {ad.originalCurrency}</p>
+                <p className="ad-card-price">Ціна продавця: {ad.originalPrice} {ad.originalCurrency}</p>
                 <p className="muted">
                     {Math.round(ad.calculatedPrices.USD)} USD · {Math.round(ad.calculatedPrices.EUR)} EUR · {Math.round(ad.calculatedPrices.UAH)} UAH
                 </p>
+                {ad.exchangeRatesUsed && (
+                    <p className="muted">
+                        Курс на {ad.exchangeRatesUsed.date}: 1 USD = {ad.exchangeRatesUsed.USD_UAH} UAH, 1 EUR = {ad.exchangeRatesUsed.EUR_UAH} UAH
+                        ({ad.exchangeRatesUsed.source === 'mock' ? 'mock' : 'ПриватБанк'})
+                    </p>
+                )}
                 <p className="ad-card-info" style={{maxHeight: showMore ? 'none' : 60, overflow: 'hidden'}}>{ad.description}</p>
                 {ad.description.length > 100 && (
                     <button className="link-button" type="button" onClick={() => setShowMore((value) => !value)}>
                         {showMore ? 'Менше' : 'Більше'}
                     </button>
                 )}
-                <p className="muted">Продавець: {ad.sellerName || '—'}{ad.sellerEmail ? ` · ${ad.sellerEmail}` : ''}</p>
-                <p className="muted">Переглядів: {ad.views}</p>
+                <p className="muted">Контакт продавця: {ad.sellerName || '—'}{ad.sellerEmail ? ` · ${ad.sellerEmail}` : ''}</p>
                 {ad.status !== 'ACTIVE' && (
                     <p>
                         <span className={ad.status === 'INACTIVE' ? 'badge badge-bad' : 'badge badge-warn'}>

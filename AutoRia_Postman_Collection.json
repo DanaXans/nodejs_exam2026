@@ -1,391 +1,355 @@
 {
   "info": {
     "_postman_id": "a9b1c2d3-e4f5-4a6b-8c7d-0e1f2a3b4c5d",
-    "name": "AutoRia Exam 2026 - Test Flow",
-    "description": "Колекція запитів для перевірки ТЗ AutoRia Clone.\nОсновний flow: реєстрація продавця -> логін -> одне оголошення на BASIC -> ліміт -> PREMIUM -> друге оголошення -> список -> аналітика -> видалення.\nДалі: список марок, вхід адміністратора і створення менеджера.",
+    "name": "AutoRia Exam 2026",
+    "description": "Перевірка ТЗ. Перед запуском підніміть API і MongoDB. Адмін створюється сам: admin@autoria.local / admin123. Для стабільних курсів поставте USE_MOCK_RATES=true.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    {
-      "key": "baseUrl",
-      "value": "http://localhost:5000/api",
-      "type": "string"
-    },
-    {
-      "key": "token",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "adId",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "adminToken",
-      "value": "",
-      "type": "string"
-    }
+    {"key": "baseUrl", "value": "http://localhost:5000/api"},
+    {"key": "token", "value": ""},
+    {"key": "adId", "value": ""},
+    {"key": "badAdId", "value": ""},
+    {"key": "adminToken", "value": ""},
+    {"key": "managerToken", "value": ""},
+    {"key": "badUserId", "value": ""}
   ],
   "item": [
     {
       "name": "01. Register Seller",
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "exec": [
-              "if (pm.response.code === 201 || pm.response.code === 200) {",
-              "    const data = pm.response.json();",
-              "    if (data.token) {",
-              "        pm.collectionVariables.set('token', data.token);",
-              "    }",
-              "}"
-            ],
-            "type": "text/javascript"
-          }
-        }
-      ],
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "const data = pm.response.json();",
+        "pm.test('201', () => pm.response.to.have.status(201));",
+        "pm.collectionVariables.set('token', data.token);",
+        "pm.test('seller basic', () => {",
+        "  pm.expect(data.user.role).to.eql('SELLER');",
+        "  pm.expect(data.user.accountType).to.eql('BASIC');",
+        "});"
+      ]}}],
       "request": {
         "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"name\": \"Dana Seller\",\n  \"email\": \"seller_exam@test.com\",\n  \"password\": \"Password123!\"\n}"
-        },
-        "url": {
-          "raw": "{{baseUrl}}/auth/register",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "auth",
-            "register"
-          ]
-        },
-        "description": "Реєстрація нового користувача з роллю SELLER та типом BASIC за замовчуванням."
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "body": {"mode": "raw", "raw": "{\n  \"name\": \"Dana Seller\",\n  \"email\": \"seller_exam@test.com\",\n  \"password\": \"Password123!\"\n}"},
+        "url": "{{baseUrl}}/auth/register"
       }
     },
     {
       "name": "02. Login Seller",
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "exec": [
-              "if (pm.response.code === 200) {",
-              "    const data = pm.response.json();",
-              "    if (data.token) {",
-              "        pm.collectionVariables.set('token', data.token);",
-              "    }",
-              "}"
-            ],
-            "type": "text/javascript"
-          }
-        }
-      ],
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"email\": \"seller_exam@test.com\",\n  \"password\": \"Password123!\"\n}"
-        },
-        "url": {
-          "raw": "{{baseUrl}}/auth/login",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "auth",
-            "login"
-          ]
-        },
-        "description": "Авторизація. Токен автоматично зберігається у змінну {{token}}."
-      }
-    },
-    {
-      "name": "03. Create 1st Car Ad (BASIC)",
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "exec": [
-              "if (pm.response.code === 201 || pm.response.code === 200) {",
-              "    const data = pm.response.json();",
-              "    const createdAd = data.ad || data;",
-              "    if (createdAd._id || createdAd.id) {",
-              "        pm.collectionVariables.set('adId', createdAd._id || createdAd.id);",
-              "    }",
-              "}"
-            ],
-            "type": "text/javascript"
-          }
-        }
-      ],
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          },
-          {
-            "key": "Authorization",
-            "value": "Bearer {{token}}"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"title\": \"BMW X5 2021 в ідеальному стані\",\n  \"description\": \"Офіційне авто, перший власник, повне сервісне обслуговування.\",\n  \"make\": \"BMW\",\n  \"model\": \"X5\",\n  \"region\": \"Київ\",\n  \"originalPrice\": 45000,\n  \"originalCurrency\": \"USD\"\n}"
-        },
-        "url": {
-          "raw": "{{baseUrl}}/ads",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "ads"
-          ]
-        },
-        "description": "Створення першого авто для BASIC акаунта. ID зберігається у {{adId}}."
-      }
-    },
-    {
-      "name": "04. Create 2nd Car Ad (BASIC - Expect 403 Limit Error)",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          },
-          {
-            "key": "Authorization",
-            "value": "Bearer {{token}}"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"title\": \"Audi Q7 2020 Quattro\",\n  \"description\": \"Спроба викласти друге оголошення на базовому акаунті.\",\n  \"make\": \"Audi\",\n  \"model\": \"Q7\",\n  \"region\": \"Львівська область\",\n  \"originalPrice\": 40000,\n  \"originalCurrency\": \"USD\"\n}"
-        },
-        "url": {
-          "raw": "{{baseUrl}}/ads",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "ads"
-          ]
-        },
-        "description": "Перевірка обмеження: очікується 403 (BASIC: максимум 1 оголошення)."
-      }
-    },
-    {
-      "name": "05. Upgrade to Premium",
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "exec": [
-              "if (pm.response.code === 200) {",
-              "    const data = pm.response.json();",
-              "    if (data.token) {",
-              "        pm.collectionVariables.set('token', data.token);",
-              "    }",
-              "}"
-            ],
-            "type": "text/javascript"
-          }
-        }
-      ],
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Authorization",
-            "value": "Bearer {{token}}"
-          }
-        ],
-        "url": {
-          "raw": "{{baseUrl}}/auth/upgrade-to-premium",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "auth",
-            "upgrade-to-premium"
-          ]
-        },
-        "description": "Mock-апгрейд до PREMIUM. Оновлений токен автоматично записується у {{token}}."
-      }
-    },
-    {
-      "name": "06. Create 2nd Car Ad (PREMIUM - Success)",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          },
-          {
-            "key": "Authorization",
-            "value": "Bearer {{token}}"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"title\": \"Audi Q7 2020 Quattro\",\n  \"description\": \"Друге авто успішно створюється після отримання статусу PREMIUM.\",\n  \"make\": \"Audi\",\n  \"model\": \"Q7\",\n  \"region\": \"Львівська область\",\n  \"originalPrice\": 40000,\n  \"originalCurrency\": \"USD\"\n}"
-        },
-        "url": {
-          "raw": "{{baseUrl}}/ads",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "ads"
-          ]
-        },
-        "description": "Створення другого оголошення без обмежень (PREMIUM)."
-      }
-    },
-    {
-      "name": "07. Get All Ads",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{baseUrl}}/ads",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "ads"
-          ]
-        },
-        "description": "Каталог оголошень з розрахунком валют (USD, EUR, UAH)."
-      }
-    },
-    {
-      "name": "08. Get Ad Analytics (PREMIUM Only)",
-      "request": {
-        "method": "GET",
-        "header": [
-          {
-            "key": "Authorization",
-            "value": "Bearer {{token}}"
-          }
-        ],
-        "url": {
-          "raw": "{{baseUrl}}/ads/{{adId}}/analytics",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "ads",
-            "{{adId}}",
-            "analytics"
-          ]
-        },
-        "description": "Аналітика для PREMIUM: перегляди, середня ціна по регіону та Україні."
-      }
-    },
-    {
-      "name": "09. Delete Ad",
-      "request": {
-        "method": "DELETE",
-        "header": [
-          {
-            "key": "Authorization",
-            "value": "Bearer {{token}}"
-          }
-        ],
-        "url": {
-          "raw": "{{baseUrl}}/ads/{{adId}}",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "ads",
-            "{{adId}}"
-          ]
-        },
-        "description": "Видалення оголошення."
-      }
-    },
-    {
-      "name": "10. Get Brands",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{baseUrl}}/brands",
-          "host": ["{{baseUrl}}"],
-          "path": ["brands"]
-        },
-        "description": "Довідник марок і моделей для форми оголошення."
-      }
-    },
-    {
-      "name": "11. Login Admin",
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "exec": [
-              "if (pm.response.code === 200) {",
-              "    const data = pm.response.json();",
-              "    if (data.token) pm.collectionVariables.set('adminToken', data.token);",
-              "}"
-            ],
-            "type": "text/javascript"
-          }
-        }
-      ],
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "const data = pm.response.json();",
+        "pm.test('200', () => pm.response.to.have.status(200));",
+        "pm.collectionVariables.set('token', data.token);"
+      ]}}],
       "request": {
         "method": "POST",
         "header": [{"key": "Content-Type", "value": "application/json"}],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"email\": \"admin@autoria.local\",\n  \"password\": \"admin123\"\n}"
-        },
-        "url": {
-          "raw": "{{baseUrl}}/auth/login",
-          "host": ["{{baseUrl}}"],
-          "path": ["auth", "login"]
-        },
-        "description": "Вхід під адміністратором, якого сервер створює при першому запуску."
+        "body": {"mode": "raw", "raw": "{\n  \"email\": \"seller_exam@test.com\",\n  \"password\": \"Password123!\"\n}"},
+        "url": "{{baseUrl}}/auth/login"
       }
     },
     {
-      "name": "12. Create Manager",
+      "name": "03. Brands include BMW X5 and Daewoo Lanos",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "const data = pm.response.json();",
+        "pm.test('catalog', () => {",
+        "  pm.expect(data.BMW).to.include('X5');",
+        "  pm.expect(data.Daewoo).to.include('Lanos');",
+        "});"
+      ]}}],
+      "request": {"method": "GET", "url": "{{baseUrl}}/brands"}
+    },
+    {
+      "name": "04. Create 1st ad (BASIC)",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "const data = pm.response.json();",
+        "pm.test('201 active', () => {",
+        "  pm.response.to.have.status(201);",
+        "  pm.expect(data.status).to.eql('ACTIVE');",
+        "  pm.expect(data.originalPrice).to.eql(45000);",
+        "  pm.expect(data.originalCurrency).to.eql('USD');",
+        "  pm.expect(data.exchangeRatesUsed.USD_UAH).to.be.a('number');",
+        "  pm.expect(data.exchangeRatesUsed.EUR_UAH).to.be.a('number');",
+        "  pm.expect(data.exchangeRatesUsed.date).to.be.a('string');",
+        "});",
+        "pm.collectionVariables.set('adId', data._id);"
+      ]}}],
+      "request": {
+        "method": "POST",
+        "header": [
+          {"key": "Content-Type", "value": "application/json"},
+          {"key": "Authorization", "value": "Bearer {{token}}"}
+        ],
+        "body": {"mode": "raw", "raw": "{\n  \"title\": \"BMW X5 2021\",\n  \"description\": \"Офіційне авто, перший власник.\",\n  \"make\": \"BMW\",\n  \"model\": \"X5\",\n  \"region\": \"Київ\",\n  \"originalPrice\": 45000,\n  \"originalCurrency\": \"USD\"\n}"},
+        "url": "{{baseUrl}}/ads"
+      }
+    },
+    {
+      "name": "05. Second ad on BASIC is forbidden",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "pm.test('403', () => pm.response.to.have.status(403));"
+      ]}}],
+      "request": {
+        "method": "POST",
+        "header": [
+          {"key": "Content-Type", "value": "application/json"},
+          {"key": "Authorization", "value": "Bearer {{token}}"}
+        ],
+        "body": {"mode": "raw", "raw": "{\n  \"title\": \"Audi Q7\",\n  \"description\": \"Друге авто на базовому акаунті.\",\n  \"make\": \"Audi\",\n  \"model\": \"Q7\",\n  \"region\": \"Львівська область\",\n  \"originalPrice\": 40000,\n  \"originalCurrency\": \"EUR\"\n}"},
+        "url": "{{baseUrl}}/ads"
+      }
+    },
+    {
+      "name": "06. Mock upgrade to PREMIUM",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "const data = pm.response.json();",
+        "pm.test('premium', () => {",
+        "  pm.response.to.have.status(200);",
+        "  pm.expect(data.user.accountType).to.eql('PREMIUM');",
+        "});",
+        "pm.collectionVariables.set('token', data.token);"
+      ]}}],
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+        "url": "{{baseUrl}}/auth/upgrade-to-premium"
+      }
+    },
+    {
+      "name": "07. Second ad after PREMIUM",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "pm.test('201', () => pm.response.to.have.status(201));"
+      ]}}],
+      "request": {
+        "method": "POST",
+        "header": [
+          {"key": "Content-Type", "value": "application/json"},
+          {"key": "Authorization", "value": "Bearer {{token}}"}
+        ],
+        "body": {"mode": "raw", "raw": "{\n  \"title\": \"Audi Q7 2020\",\n  \"description\": \"Друге авто після PREMIUM.\",\n  \"make\": \"Audi\",\n  \"model\": \"Q7\",\n  \"region\": \"Львівська область\",\n  \"originalPrice\": 40000,\n  \"originalCurrency\": \"EUR\"\n}"},
+        "url": "{{baseUrl}}/ads"
+      }
+    },
+    {
+      "name": "08. Analytics is closed for BASIC buyer",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "const registered = pm.response.json();",
+        "pm.collectionVariables.set('buyerToken', registered.token);"
+      ]}}],
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "body": {"mode": "raw", "raw": "{\n  \"name\": \"Buyer\",\n  \"email\": \"buyer_exam@test.com\",\n  \"password\": \"Password123!\",\n  \"role\": \"BUYER\"\n}"},
+        "url": "{{baseUrl}}/auth/register"
+      }
+    },
+    {
+      "name": "09. Open ad as buyer counts a view",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "const data = pm.response.json();",
+        "pm.test('contact and price', () => {",
+        "  pm.expect(data.sellerEmail).to.be.a('string').and.not.empty;",
+        "  pm.expect(data.originalPrice).to.eql(45000);",
+        "  pm.expect(data.views).to.be.at.least(1);",
+        "});"
+      ]}}],
+      "request": {
+        "method": "GET",
+        "header": [{"key": "Authorization", "value": "Bearer {{buyerToken}}"}],
+        "url": "{{baseUrl}}/ads/{{adId}}"
+      }
+    },
+    {
+      "name": "10. Premium analytics",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "const data = pm.response.json();",
+        "pm.test('stats', () => {",
+        "  pm.response.to.have.status(200);",
+        "  pm.expect(data.views).to.be.a('number');",
+        "  pm.expect(data.viewsDay).to.be.a('number');",
+        "  pm.expect(data.viewsWeek).to.be.a('number');",
+        "  pm.expect(data.viewsMonth).to.be.a('number');",
+        "  pm.expect(data.avgPriceRegion).to.be.a('number');",
+        "  pm.expect(data.avgPriceUkraine).to.be.a('number');",
+        "  pm.expect(data.regionName).to.eql('Київ');",
+        "});"
+      ]}}],
+      "request": {
+        "method": "GET",
+        "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+        "url": "{{baseUrl}}/ads/{{adId}}/analytics"
+      }
+    },
+    {
+      "name": "11. Register seller for profanity",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "const data = pm.response.json();",
+        "pm.collectionVariables.set('badToken', data.token);"
+      ]}}],
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "body": {"mode": "raw", "raw": "{\n  \"name\": \"Bad Seller\",\n  \"email\": \"bad_exam@test.com\",\n  \"password\": \"Password123!\"\n}"},
+        "url": "{{baseUrl}}/auth/register"
+      }
+    },
+    {
+      "name": "12. Profanity attempt 1",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "const data = pm.response.json();",
+        "pm.test('pending', () => pm.expect(data.status).to.eql('PENDING_EDIT'));",
+        "pm.collectionVariables.set('badAdId', data._id);"
+      ]}}],
+      "request": {
+        "method": "POST",
+        "header": [
+          {"key": "Content-Type", "value": "application/json"},
+          {"key": "Authorization", "value": "Bearer {{badToken}}"}
+        ],
+        "body": {"mode": "raw", "raw": "{\n  \"title\": \"Daewoo Lanos\",\n  \"description\": \"сука продаж\",\n  \"make\": \"Daewoo\",\n  \"model\": \"Lanos\",\n  \"region\": \"Київ\",\n  \"originalPrice\": 2500,\n  \"originalCurrency\": \"USD\"\n}"},
+        "url": "{{baseUrl}}/ads"
+      }
+    },
+    {
+      "name": "13. Profanity attempt 2",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "pm.test('still pending', () => pm.expect(pm.response.json().status).to.eql('PENDING_EDIT'));"
+      ]}}],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {"key": "Content-Type", "value": "application/json"},
+          {"key": "Authorization", "value": "Bearer {{badToken}}"}
+        ],
+        "body": {"mode": "raw", "raw": "{\n  \"title\": \"Daewoo Lanos\",\n  \"description\": \"сука продаж знову\",\n  \"make\": \"Daewoo\",\n  \"model\": \"Lanos\",\n  \"region\": \"Київ\",\n  \"originalPrice\": 2500,\n  \"originalCurrency\": \"USD\"\n}"},
+        "url": "{{baseUrl}}/ads/{{badAdId}}"
+      }
+    },
+    {
+      "name": "14. Profanity attempt 3 deactivates and emails manager",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "const data = pm.response.json();",
+        "pm.test('inactive', () => {",
+        "  pm.expect(data.status).to.eql('INACTIVE');",
+        "  pm.expect(data.badWordsAttempts).to.eql(3);",
+        "});"
+      ]}}],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {"key": "Content-Type", "value": "application/json"},
+          {"key": "Authorization", "value": "Bearer {{badToken}}"}
+        ],
+        "body": {"mode": "raw", "raw": "{\n  \"title\": \"Daewoo Lanos\",\n  \"description\": \"сука продаж втретє\",\n  \"make\": \"Daewoo\",\n  \"model\": \"Lanos\",\n  \"region\": \"Київ\",\n  \"originalPrice\": 2500,\n  \"originalCurrency\": \"USD\"\n}"},
+        "url": "{{baseUrl}}/ads/{{badAdId}}"
+      }
+    },
+    {
+      "name": "15. Login admin",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "const data = pm.response.json();",
+        "pm.collectionVariables.set('adminToken', data.token);"
+      ]}}],
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "body": {"mode": "raw", "raw": "{\n  \"email\": \"admin@autoria.local\",\n  \"password\": \"admin123\"\n}"},
+        "url": "{{baseUrl}}/auth/login"
+      }
+    },
+    {
+      "name": "16. Admin creates manager",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "pm.test('201', () => pm.response.to.have.status(201));"
+      ]}}],
       "request": {
         "method": "POST",
         "header": [
           {"key": "Content-Type", "value": "application/json"},
           {"key": "Authorization", "value": "Bearer {{adminToken}}"}
         ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"name\": \"Exam Manager\",\n  \"email\": \"manager_exam@test.com\",\n  \"password\": \"Password123!\"\n}"
-        },
-        "url": {
-          "raw": "{{baseUrl}}/users/managers",
-          "host": ["{{baseUrl}}"],
-          "path": ["users", "managers"]
-        },
-        "description": "Менеджера може створити тільки адміністратор."
+        "body": {"mode": "raw", "raw": "{\n  \"name\": \"Exam Manager\",\n  \"email\": \"manager_exam@test.com\",\n  \"password\": \"Password123!\"\n}"},
+        "url": "{{baseUrl}}/users/managers"
+      }
+    },
+    {
+      "name": "17. Login manager",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "if (pm.response.code === 200) pm.collectionVariables.set('managerToken', pm.response.json().token);"
+      ]}}],
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "body": {"mode": "raw", "raw": "{\n  \"email\": \"manager_exam@test.com\",\n  \"password\": \"Password123!\"\n}"},
+        "url": "{{baseUrl}}/auth/login"
+      }
+    },
+    {
+      "name": "18. Inbox contains the profanity letter",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "const data = pm.response.json();",
+        "pm.test('letter', () => {",
+        "  pm.response.to.have.status(200);",
+        "  pm.expect(data.some((email) => email.adId === pm.collectionVariables.get('badAdId'))).to.eql(true);",
+        "});"
+      ]}}],
+      "request": {
+        "method": "GET",
+        "header": [{"key": "Authorization", "value": "Bearer {{managerToken}}"}],
+        "url": "{{baseUrl}}/emails"
+      }
+    },
+    {
+      "name": "19. Manager bans the seller",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "const users = pm.response.json();",
+        "const bad = users.find((user) => user.email === 'bad_exam@test.com');",
+        "pm.collectionVariables.set('badUserId', bad.id);"
+      ]}}],
+      "request": {
+        "method": "GET",
+        "header": [{"key": "Authorization", "value": "Bearer {{managerToken}}"}],
+        "url": "{{baseUrl}}/users"
+      }
+    },
+    {
+      "name": "20. Ban request",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "pm.test('banned', () => pm.expect(pm.response.json().isBanned).to.eql(true));"
+      ]}}],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {"key": "Content-Type", "value": "application/json"},
+          {"key": "Authorization", "value": "Bearer {{managerToken}}"}
+        ],
+        "body": {"mode": "raw", "raw": "{\n  \"isBanned\": true\n}"},
+        "url": "{{baseUrl}}/users/{{badUserId}}/ban"
+      }
+    },
+    {
+      "name": "21. Seller reports a missing brand",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "pm.test('201', () => pm.response.to.have.status(201));"
+      ]}}],
+      "request": {
+        "method": "POST",
+        "header": [
+          {"key": "Content-Type", "value": "application/json"},
+          {"key": "Authorization", "value": "Bearer {{token}}"}
+        ],
+        "body": {"mode": "raw", "raw": "{\n  \"make\": \"Tesla\",\n  \"model\": \"Model 3\"\n}"},
+        "url": "{{baseUrl}}/brands/missing"
+      }
+    },
+    {
+      "name": "22. Delete own ad",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "pm.test('200', () => pm.response.to.have.status(200));"
+      ]}}],
+      "request": {
+        "method": "DELETE",
+        "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+        "url": "{{baseUrl}}/ads/{{adId}}"
       }
     }
   ]

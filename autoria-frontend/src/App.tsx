@@ -209,13 +209,17 @@ export const App = () => {
                     <div className="modal">
                         <h2 className="modal-title">{openedAd.title}</h2>
                         <p className="ad-card-info">{openedAd.make} {openedAd.model} · {openedAd.region}</p>
-                        <p className="ad-card-price">{openedAd.originalPrice} {openedAd.originalCurrency}</p>
+                        <p className="ad-card-price">Ціна продавця: {openedAd.originalPrice} {openedAd.originalCurrency}</p>
                         <p className="muted">
                             {openedAd.calculatedPrices.USD} USD · {openedAd.calculatedPrices.EUR} EUR · {openedAd.calculatedPrices.UAH} UAH
                         </p>
+                        {openedAd.exchangeRatesUsed && (
+                            <p className="muted">
+                                Курс на {openedAd.exchangeRatesUsed.date}: 1 USD = {openedAd.exchangeRatesUsed.USD_UAH} UAH, 1 EUR = {openedAd.exchangeRatesUsed.EUR_UAH} UAH
+                            </p>
+                        )}
                         <p className="ad-card-info">{openedAd.description}</p>
-                        <p className="muted">Продавець: {openedAd.sellerName} · {openedAd.sellerEmail}</p>
-                        <p className="muted">Переглядів: {openedAd.views}</p>
+                        <p className="muted">Контакт продавця: {openedAd.sellerName} · {openedAd.sellerEmail}</p>
                         <button className="btn btn-secondary" type="button" onClick={() => setOpenedAd(null)}>Закрити</button>
                     </div>
                 </div>

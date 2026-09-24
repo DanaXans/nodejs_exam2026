@@ -1,6 +1,6 @@
 import {useEffect, useState} from 'react';
 import type {FormEvent} from 'react';
-import type {BrandRequest, PublicUser, User} from '../types';
+import type {BrandRequest, PublicUser, SentEmail, User} from '../types';
 import {apiCall} from '../api/axiosClient';
 
 interface ModerationPanelProps {
@@ -10,6 +10,7 @@ interface ModerationPanelProps {
 export const ModerationPanel = ({user}: ModerationPanelProps) => {
     const [users, setUsers] = useState<PublicUser[]>([]);
     const [reports, setReports] = useState<BrandRequest[]>([]);
+    const [emails, setEmails] = useState<SentEmail[]>([]);
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -17,6 +18,7 @@ export const ModerationPanel = ({user}: ModerationPanelProps) => {
     const load = async () => {
         const nextUsers = await apiCall<PublicUser[]>('/users');
         setUsers(nextUsers);
+        setEmails(await apiCall<SentEmail[]>('/emails'));
         if (user.role === 'ADMIN') {
             setReports(await apiCall<BrandRequest[]>('/brands/missing'));
         }
@@ -96,6 +98,13 @@ export const ModerationPanel = ({user}: ModerationPanelProps) => {
                 ))}
                 </tbody>
             </table>
+            <div className="section">
+                <h3>Листи менеджеру</h3>
+                {emails.length === 0 && <p className="muted">Листів немає</p>}
+                {emails.map((email) => (
+                    <p key={email.id} className="muted">{email.subject}: {email.body}</p>
+                ))}
+            </div>
             {user.role === 'ADMIN' && (
                 <div className="section">
                     <h3>Запити на нові марки</h3>

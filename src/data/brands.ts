@@ -1,6 +1,7 @@
 export const CAR_BRANDS: Record<string, string[]> = {
     Audi: ['A4', 'A6', 'Q7'],
     BMW: ['3 Series', '5 Series', 'X5'],
+    Daewoo: ['Lanos', 'Sens'],
     Hyundai: ['Elantra', 'Tucson'],
     Kia: ['Ceed', 'Sportage'],
     'Mercedes-Benz': ['C-Class', 'E-Class'],

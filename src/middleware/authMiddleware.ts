@@ -2,11 +2,13 @@ import {NextFunction, Request, Response} from 'express';
 import jwt from 'jsonwebtoken';
 import {User} from '../models/User.js';
 import {AccountType, UserRole} from '../types/index.js';
+import {PermissionName, permissionsFor} from '../permissions.js';
 
 export interface AuthUserPayload {
     userId: string;
     role: UserRole;
     accountType: AccountType;
+    permissions: PermissionName[];
 }
 
 export interface AuthRequest extends Request {
@@ -33,6 +35,7 @@ const readUser = async (token: string): Promise<AuthUserPayload | 'banned' | nul
         userId: String(user._id),
         role: user.role,
         accountType: user.accountType,
+        permissions: permissionsFor(user.role, user.accountType),
     };
 };
 
@@ -74,12 +77,13 @@ export const optionalAuth = async (req: AuthRequest, _res: Response, next: NextF
     next();
 };
 
-export const requireRole = (...roles: UserRole[]) => {
+export const requirePermission = (...permissions: PermissionName[]) => {
     return (req: AuthRequest, res: Response, next: NextFunction) => {
         if (!req.user) {
             return res.status(401).json({message: 'Користувач не авторизований'});
         }
-        if (!roles.includes(req.user.role)) {
+        const allowed = permissions.every((permission) => req.user?.permissions.includes(permission));
+        if (!allowed) {
             return res.status(403).json({message: 'Недостатньо прав для цієї дії'});
         }
         next();

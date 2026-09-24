@@ -16,6 +16,12 @@ export interface ICarAd {
         UAH: number;
         EUR: number;
     };
+    exchangeRatesUsed: {
+        USD_UAH: number;
+        EUR_UAH: number;
+        source: 'privatbank' | 'mock';
+        date: string;
+    };
     status: AdStatus;
     badWordsAttempts: number;
     views: number;
@@ -38,6 +44,12 @@ const carAdSchema = new Schema<ICarAd>(
             USD: {type: Number, required: true},
             UAH: {type: Number, required: true},
             EUR: {type: Number, required: true},
+        },
+        exchangeRatesUsed: {
+            USD_UAH: {type: Number, required: true},
+            EUR_UAH: {type: Number, required: true},
+            source: {type: String, enum: ['privatbank', 'mock'], required: true},
+            date: {type: String, required: true},
         },
         status: {type: String, enum: Object.values(AdStatus), default: AdStatus.ACTIVE},
         badWordsAttempts: {type: Number, default: 0},

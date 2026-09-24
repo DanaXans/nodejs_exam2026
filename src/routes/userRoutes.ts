@@ -1,12 +1,12 @@
 import {Router} from 'express';
 import {createManager, listUsers, setBan} from '../controllers/userController.js';
-import {authMiddleware, requireRole} from '../middleware/authMiddleware.js';
-import {UserRole} from '../types/index.js';
+import {authMiddleware, requirePermission} from '../middleware/authMiddleware.js';
+import {Permission} from '../permissions.js';
 
 const router = Router();
 
-router.get('/', authMiddleware, requireRole(UserRole.MANAGER, UserRole.ADMIN), listUsers);
-router.post('/managers', authMiddleware, requireRole(UserRole.ADMIN), createManager);
-router.patch('/:id/ban', authMiddleware, requireRole(UserRole.MANAGER, UserRole.ADMIN), setBan);
+router.get('/', authMiddleware, requirePermission(Permission.USER_LIST), listUsers);
+router.post('/managers', authMiddleware, requirePermission(Permission.USER_CREATE_MANAGER), createManager);
+router.patch('/:id/ban', authMiddleware, requirePermission(Permission.USER_BAN), setBan);
 
 export default router;
