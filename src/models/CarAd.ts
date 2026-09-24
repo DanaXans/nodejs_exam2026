@@ -1,8 +1,7 @@
 import {model, Schema, Types} from 'mongoose';
-import {AdStatus, Currency} from '../types/index.js';
 
 export interface ICarAd {
-    _id: Types.ObjectId;
+    _id?: Types.ObjectId;
     sellerId: Types.ObjectId;
     title: string;
     description: string;
@@ -10,22 +9,15 @@ export interface ICarAd {
     model: string;
     region: string;
     originalPrice: number;
-    originalCurrency: Currency;
+    originalCurrency: string;
     calculatedPrices: {
         USD: number;
         UAH: number;
         EUR: number;
     };
-    exchangeRatesUsed: {
-        USD_UAH: number;
-        EUR_UAH: number;
-        source: 'privatbank' | 'mock';
-        date: string;
-    };
-    status: AdStatus;
+    status: string;
     badWordsAttempts: number;
     views: number;
-    viewDates: Date[];
     createdAt: Date;
     updatedAt: Date;
 }
@@ -39,24 +31,17 @@ const carAdSchema = new Schema<ICarAd>(
         model: {type: String, required: true},
         region: {type: String, required: true},
         originalPrice: {type: Number, required: true},
-        originalCurrency: {type: String, enum: Object.values(Currency), required: true},
+        originalCurrency: {type: String, required: true},
         calculatedPrices: {
-            USD: {type: Number, required: true},
-            UAH: {type: Number, required: true},
-            EUR: {type: Number, required: true},
+            USD: {type: Number, default: 0},
+            UAH: {type: Number, default: 0},
+            EUR: {type: Number, default: 0}
         },
-        exchangeRatesUsed: {
-            USD_UAH: {type: Number, required: true},
-            EUR_UAH: {type: Number, required: true},
-            source: {type: String, enum: ['privatbank', 'mock'], required: true},
-            date: {type: String, required: true},
-        },
-        status: {type: String, enum: Object.values(AdStatus), default: AdStatus.ACTIVE},
+        status: {type: String, default: 'ACTIVE'},
         badWordsAttempts: {type: Number, default: 0},
-        views: {type: Number, default: 0},
-        viewDates: {type: [Date], default: [], select: false},
+        views: {type: Number, default: 0}
     },
-    {timestamps: true},
+    {timestamps: true}
 );
 
 export const CarAd = model<ICarAd>('CarAd', carAdSchema);

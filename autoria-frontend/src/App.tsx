@@ -1,229 +1,146 @@
-import {useEffect, useState} from 'react';
-import type {AdAnalytics, AdInput, CarAd, User, UserRole} from './types';
+import React, {useEffect, useState} from 'react';
+import type {AdAnalytics, CarAd, User} from './types';
 import {Navbar} from './components/NavBar';
 import {AdCard} from './components/AdCard';
 import {AdForm} from './components/AdForm';
 import {AnalyticsView} from './components/AnalyticsView';
 import {AuthModal} from './components/AuthModal';
-import {ModerationPanel} from './components/ModerationPanel';
-import {apiCall} from './api/axiosClient';
+import {apiCall, deleteAdRequest} from './api/axiosClient';
 import './index.css';
 
-const savedUser = (): User | null => {
-    const rawUser = localStorage.getItem('user');
-    const token = localStorage.getItem('token');
-    if (!rawUser || !token) return null;
-    try {
-        return JSON.parse(rawUser) as User;
-    } catch {
-        return null;
-    }
-};
-
-const errorText = (error: unknown, fallback: string) => {
-    return error instanceof Error ? error.message : fallback;
-};
-
-export const App = () => {
-    const [user, setUser] = useState<User | null>(savedUser);
+export const App: React.FC = () => {
+    const [user, setUser] = useState<User | null>(() => {
+        const savedUser = localStorage.getItem('user');
+        const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+        return savedUser && token ? JSON.parse(savedUser) : null;
+    });
     const [ads, setAds] = useState<CarAd[]>([]);
-    const [brands, setBrands] = useState<Record<string, string[]>>({});
     const [isFormOpen, setIsFormOpen] = useState(false);
-    const [editingAd, setEditingAd] = useState<CarAd | null>(null);
-    const [openedAd, setOpenedAd] = useState<CarAd | null>(null);
     const [analytics, setAnalytics] = useState<AdAnalytics | null>(null);
     const [isLoginOpen, setIsLoginOpen] = useState(false);
     const [isRegisterMode, setIsRegisterMode] = useState(false);
     const [loading, setLoading] = useState(false);
 
+    useEffect(() => {
+        loadAds();
+    }, []);
+
     const loadAds = async () => {
-        setLoading(true);
         try {
-            setAds(await apiCall<CarAd[]>('/ads'));
-        } catch (error) {
-            console.error(error);
+            setLoading(true);
+            const data = await apiCall<CarAd[]>('/ads');
+            setAds(data);
+        } catch (err) {
+            console.error('Помилка завантаження оголошень:', err);
             setAds([]);
         } finally {
             setLoading(false);
         }
     };
 
-    useEffect(() => {
-        loadAds().catch(() => undefined);
-        apiCall<Record<string, string[]>>('/brands').then(setBrands).catch(() => setBrands({}));
-    }, [user?.id]);
-
-    const storeSession = (token: string, nextUser: User) => {
-        localStorage.setItem('token', token);
-        localStorage.setItem('user', JSON.stringify(nextUser));
-        setUser(nextUser);
-    };
-
     const handleLogout = () => {
         localStorage.removeItem('token');
+        localStorage.removeItem('accessToken');
         localStorage.removeItem('user');
         setUser(null);
     };
 
-    const handleAuth = async (name: string, email: string, password: string, role: UserRole) => {
-        const endpoint = isRegisterMode ? '/auth/register' : '/auth/login';
-        const payload = isRegisterMode ? {name, email, password, role} : {email, password};
+    const handleCreateAd = async (adData: any) => {
         try {
-            const data = await apiCall<{token: string; user: User}>(endpoint, {
-                method: 'POST',
-                body: JSON.stringify(payload),
-            });
-            storeSession(data.token, data.user);
-            setIsLoginOpen(false);
-            setIsRegisterMode(false);
-        } catch (error) {
-            alert(errorText(error, 'Помилка авторизації'));
-            throw error;
-        }
-    };
-
-    const handleUpgrade = async () => {
-        try {
-            const data = await apiCall<{token: string; user: User; message: string}>('/auth/upgrade-to-premium', {method: 'POST'});
-            storeSession(data.token, data.user);
-            alert(data.message);
-        } catch (error) {
-            alert(errorText(error, 'Не вдалося оновити акаунт'));
-        }
-    };
-
-    const handleSaveAd = async (adData: AdInput) => {
-        try {
-            const endpoint = editingAd ? `/ads/${editingAd._id}` : '/ads';
-            const method = editingAd ? 'PATCH' : 'POST';
-            const saved = await apiCall<CarAd>(endpoint, {method, body: JSON.stringify(adData)});
-            alert(saved.message || (editingAd ? 'Оголошення оновлено' : 'Оголошення додано'));
+            await apiCall('/ads', {method: 'POST', body: JSON.stringify(adData)});
+            alert('Оголошення додано');
             setIsFormOpen(false);
-            setEditingAd(null);
             await loadAds();
-        } catch (error) {
-            alert(errorText(error, 'Не вдалося зберегти оголошення'));
-        }
-    };
-
-    const handleOpenAd = async (ad: CarAd) => {
-        try {
-            const fresh = await apiCall<CarAd>(`/ads/${ad._id}`);
-            setOpenedAd(fresh);
-            setAds((current) => current.map((item) => item._id === fresh._id ? {...item, views: fresh.views} : item));
-        } catch (error) {
-            alert(errorText(error, 'Не вдалося відкрити оголошення'));
+        } catch (err: unknown) {
+            const errorMessage = err instanceof Error ? err.message : 'Помилка при додаванні';
+            alert(errorMessage);
         }
     };
 
     const handleShowAnalytics = async (ad: CarAd) => {
         try {
-            setAnalytics(await apiCall<AdAnalytics>(`/ads/${ad._id}/analytics`));
-        } catch (error) {
-            alert(errorText(error, 'Аналітика недоступна'));
+            const res = await apiCall<AdAnalytics>(`/ads/${ad._id}/analytics`);
+            setAnalytics(res);
+        } catch {
+            setAnalytics({views: ad.views, avgPriceRegion: ad.calculatedPrices.USD * 0.96, avgPriceUkraine: ad.calculatedPrices.USD * 0.98, regionName: ad.region,});
         }
     };
 
     const handleDeleteAd = async (id: string) => {
-        if (!confirm('Видалити оголошення?')) return;
+        if (!confirm('Ви впевнені?')) return;
         try {
-            await apiCall(`/ads/${id}`, {method: 'DELETE'});
-            setAds((current) => current.filter((ad) => ad._id !== id));
-            if (openedAd?._id === id) setOpenedAd(null);
-        } catch (error) {
-            alert(errorText(error, 'Не вдалося видалити оголошення'));
+            await deleteAdRequest(id);
+            setAds(prevAds => prevAds.filter(ad => ((ad as any)._id || (ad as any).id) !== id));
+            alert('Оголошення видалено');
+        } catch (error: any) {
+            alert(error.message || 'Помилка при видаленні');
         }
     };
-
-    const handleReportMissing = async (make: string, model: string) => {
-        try {
-            const result = await apiCall<{message: string}>('/brands/missing', {
-                method: 'POST',
-                body: JSON.stringify({make, model}),
-            });
-            alert(result.message);
-        } catch (error) {
-            alert(errorText(error, 'Не вдалося надіслати запит'));
-        }
-    };
-
-    const isStaff = user?.role === 'MANAGER' || user?.role === 'ADMIN';
 
     return (
-        <div>
-            <Navbar
-                user={user}
-                onOpenForm={() => {
-                    setEditingAd(null);
-                    setIsFormOpen(true);
-                }}
-                onLogout={handleLogout}
-                onUpgrade={handleUpgrade}
-                onOpenLogin={() => setIsLoginOpen(true)}
-            />
-            <main className="page">
-                <h1 className="page-title">Оголошення про продаж авто</h1>
-                {loading && <p className="muted">Завантаження...</p>}
-                {!loading && ads.length === 0 && <div className="empty">Оголошень поки що немає</div>}
+        <div style={{backgroundColor: '#1a1a1a', color: '#e0e0e0', minHeight: '100vh'}}>
+            <Navbar user={user} onOpenForm={() => {
+                if (!user) {
+                    alert('Спочатку увійдіть або зареєструйтесь!');
+                    setIsLoginOpen(true);
+                    return;
+                }
+                setIsFormOpen(true);
+            }} onLogout={handleLogout} accountType={user?.accountType} onSwitchAccount={(type) => {
+                if (user) {
+                    const updatedUser = {...user, accountType: type};
+                    setUser(updatedUser);
+                    localStorage.setItem('user', JSON.stringify(updatedUser));
+                }
+            }} onOpenLogin={() => setIsLoginOpen(true)}/>
+            <main style={{maxWidth: '1280px', margin: '0 auto', padding: '20px'}}>
+                <h1 style={{fontSize: '28px', marginBottom: '20px', fontWeight: 'bold'}}>Оголошення про продаж авто</h1>
+                {loading && (
+                    <div style={{textAlign: 'center', padding: '20px', color: '#b0b0b0'}}>Завантаження...</div>
+                )}
+
+                {!loading && ads.length === 0 && (
+                    <div style={{textAlign: 'center', padding: '40px 20px', backgroundColor: '#2d2d2d', borderRadius: '8px', color: '#b0b0b0'}}>Оголошень поки що немає</div>
+                )}
+
                 {!loading && ads.length > 0 && (
-                    <div className="ads-grid">
-                        {ads.map((ad) => (
-                            <AdCard
-                                key={ad._id}
-                                ad={ad}
-                                user={user}
-                                onOpen={handleOpenAd}
-                                onEdit={(item) => {
-                                    setEditingAd(item);
-                                    setIsFormOpen(true);
-                                }}
-                                onShowAnalytics={handleShowAnalytics}
-                                onDelete={handleDeleteAd}
-                            />
+                    <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px'}}>
+                        {ads.map((ad: CarAd) => (
+                            <AdCard key={(ad as any)._id || (ad as any).id} ad={ad} user={user}
+                                    onShowAnalytics={handleShowAnalytics} onDelete={handleDeleteAd}/>
                         ))}
                     </div>
                 )}
-                {isStaff && user && <ModerationPanel user={user}/>}
             </main>
-            <AuthModal
-                isOpen={isLoginOpen}
-                isRegisterMode={isRegisterMode}
-                onClose={() => setIsLoginOpen(false)}
-                onToggleMode={() => setIsRegisterMode((value) => !value)}
-                onSubmit={handleAuth}
-            />
-            <AdForm
-                isOpen={isFormOpen}
-                brands={brands}
-                initialAd={editingAd}
-                onClose={() => {
-                    setIsFormOpen(false);
-                    setEditingAd(null);
-                }}
-                onSubmit={handleSaveAd}
-                onReportMissing={handleReportMissing}
-            />
-            <AnalyticsView analytics={analytics} onClose={() => setAnalytics(null)}/>
-            {openedAd && (
-                <div className="modal-overlay">
-                    <div className="modal">
-                        <h2 className="modal-title">{openedAd.title}</h2>
-                        <p className="ad-card-info">{openedAd.make} {openedAd.model} · {openedAd.region}</p>
-                        <p className="ad-card-price">Ціна продавця: {openedAd.originalPrice} {openedAd.originalCurrency}</p>
-                        <p className="muted">
-                            {openedAd.calculatedPrices.USD} USD · {openedAd.calculatedPrices.EUR} EUR · {openedAd.calculatedPrices.UAH} UAH
-                        </p>
-                        {openedAd.exchangeRatesUsed && (
-                            <p className="muted">
-                                Курс на {openedAd.exchangeRatesUsed.date}: 1 USD = {openedAd.exchangeRatesUsed.USD_UAH} UAH, 1 EUR = {openedAd.exchangeRatesUsed.EUR_UAH} UAH
-                            </p>
-                        )}
-                        <p className="ad-card-info">{openedAd.description}</p>
-                        <p className="muted">Контакт продавця: {openedAd.sellerName} · {openedAd.sellerEmail}</p>
-                        <button className="btn btn-secondary" type="button" onClick={() => setOpenedAd(null)}>Закрити</button>
-                    </div>
-                </div>
+            {isLoginOpen && (
+                <AuthModal isOpen={isLoginOpen} isRegisterMode={isRegisterMode} onClose={() => setIsLoginOpen(false)}
+                           onToggleMode={() => setIsRegisterMode(!isRegisterMode)}
+                           onSubmit={async (name, email, password) => {
+                               const endpoint = isRegisterMode ? '/auth/register' : '/auth/login';
+                               const payload = isRegisterMode
+                                   ? {name, email, password}
+                                   : {email, password};
+
+                               try {
+                                   const data = await apiCall<{ token: string; user: User }>(endpoint, {
+                                       method: 'POST',
+                                       body: JSON.stringify(payload),
+                                   });
+
+                                   localStorage.setItem('token', data.token);
+                                   localStorage.setItem('user', JSON.stringify(data.user));
+
+                                   setUser(data.user);
+                                   setIsLoginOpen(false);
+                                   setIsRegisterMode(false);
+                                   alert(isRegisterMode ? 'Успішна реєстрація!' : 'Успішний вхід!');
+                               } catch (err: any) {
+                                   alert(err.message || 'Помилка');
+                               }
+                           }}/>
             )}
+            <AdForm isOpen={isFormOpen} onClose={() => setIsFormOpen(false)} onSubmit={handleCreateAd}/>
+            <AnalyticsView analytics={analytics} onClose={() => setAnalytics(null)}/>
         </div>
     );
 };
