@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "a9b1c2d3-e4f5-4a6b-8c7d-0e1f2a3b4c5d",
     "name": "AutoRia Exam 2026 - Test Flow",
-    "description": "Колекція запитів для перевірки виконання ТЗ AutoRia Clone.\nПослідовний flow: Реєстрація -> Логін -> Створення оголошення (Basic) -> Перевірка ліміту -> Upgrade до Premium -> Створення другого оголошення (Premium) -> Отримання списку -> Аналітика -> Видалення.",
+    "description": "Колекція запитів для перевірки ТЗ AutoRia Clone.\nОсновний flow: реєстрація продавця -> логін -> одне оголошення на BASIC -> ліміт -> PREMIUM -> друге оголошення -> список -> аналітика -> видалення.\nДалі: список марок, вхід адміністратора і створення менеджера.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -18,6 +18,11 @@
     },
     {
       "key": "adId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "adminToken",
       "value": "",
       "type": "string"
     }
@@ -317,6 +322,70 @@
           ]
         },
         "description": "Видалення оголошення."
+      }
+    },
+    {
+      "name": "10. Get Brands",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/brands",
+          "host": ["{{baseUrl}}"],
+          "path": ["brands"]
+        },
+        "description": "Довідник марок і моделей для форми оголошення."
+      }
+    },
+    {
+      "name": "11. Login Admin",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "    const data = pm.response.json();",
+              "    if (data.token) pm.collectionVariables.set('adminToken', data.token);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"admin@autoria.local\",\n  \"password\": \"admin123\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "login"]
+        },
+        "description": "Вхід під адміністратором, якого сервер створює при першому запуску."
+      }
+    },
+    {
+      "name": "12. Create Manager",
+      "request": {
+        "method": "POST",
+        "header": [
+          {"key": "Content-Type", "value": "application/json"},
+          {"key": "Authorization", "value": "Bearer {{adminToken}}"}
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Exam Manager\",\n  \"email\": \"manager_exam@test.com\",\n  \"password\": \"Password123!\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/users/managers",
+          "host": ["{{baseUrl}}"],
+          "path": ["users", "managers"]
+        },
+        "description": "Менеджера може створити тільки адміністратор."
       }
     }
   ]

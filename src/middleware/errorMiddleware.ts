@@ -1,10 +1,7 @@
 import {NextFunction, Request, Response} from 'express';
 
-export const errorMiddleware = (err: any, req: Request, res: Response, next: NextFunction) => {
+export const errorMiddleware = (err: unknown, _req: Request, res: Response, _next: NextFunction) => {
     console.error('[GLOBAL ERROR HANDLER]:', err);
-
-    const statusCode = err.status || err.statusCode || 500;
-    const message = err.message || 'Внутрішня помилка сервера';
-
-    res.status(statusCode).json({success: false, status: statusCode, message: message,});
+    const message = err instanceof Error ? err.message : 'Внутрішня помилка сервера';
+    res.status(500).json({message});
 };

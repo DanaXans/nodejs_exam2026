@@ -1,112 +1,84 @@
-AutoRia Clone:
-Full-stack проєкт платформи для продажу автомобілів.
+AutoRia Clone — платформа оголошень про продаж авто.
 
-Технології:
-**Backend:** Node.js, Express, TypeScript, MongoDB, Mongoose, JWT  
-**Frontend:** React, TypeScript, Vite, Axios, Tailwind CSS  
-**Контейнеризація:** Docker, Docker Compose
+ТЗ, яке покриває проєкт:
 
-Реалізовано:
+- ролі `BUYER`, `SELLER`, `MANAGER`, `ADMIN`;
+- менеджера створює тільки адміністратор;
+- менеджер і адміністратор можуть блокувати користувачів і видаляти оголошення;
+- акаунти продавця: `BASIC` (одне активне оголошення) і `PREMIUM` (без ліміту і зі статистикою);
+- перехід на `PREMIUM` — mock-запит, без платіжної системи;
+- марка і модель обираються зі списку, відсутню пару можна надіслати адміністратору;
+- ціна вказується в USD, EUR або UAH, решта рахується за курсом ПриватБанку (кеш на добу);
+- нецензурна лексика: до 3 правок, після цього оголошення стає неактивним і менеджер бачить сповіщення в логах сервера;
+- статистика PREMIUM: перегляди загалом, за день, тиждень і місяць, середня ціна в регіоні та по Україні в USD.
 
-- реєстрація та авторизація користувачів;
-- ролі: `BUYER`, `SELLER`, `MANAGER`, `ADMIN`;
-- типи акаунтів: `BASIC` і `PREMIUM`;
-- створення, перегляд та видалення оголошень;
-- обмеження: BASIC-продавець може створити одне активне оголошення;
-- PREMIUM-продавець може створювати необмежену кількість оголошень;
-- перегляд аналітики оголошення для PREMIUM-акаунта;
-- перевірка оголошення на нецензурну лексику;
-- JWT-захист приватних API-запитів;
-- mock endpoint для імітації оновлення акаунта до PREMIUM;
-- Postman collection для перевірки API.
+Технології: Node.js, Express, TypeScript, MongoDB, React, Vite.
 
-Запуск:
-
-1. Backend
-   У кореневій папці проєкту:
+Запуск backend:
 
 ```bash
 npm install
 ```
 
-Створи файл `.env`:
+Файл `.env` у корені:
 
 ```env
 PORT=5000
 MONGO_URI=your_mongodb_connection_string
 JWT_SECRET=your_secret_key
 CLIENT_URL=http://localhost:5173
+ADMIN_EMAIL=admin@autoria.local
+ADMIN_PASSWORD=admin123
 ```
-
-Запуск backend:
 
 ```bash
 npm run dev
 ```
 
-Backend працює на:
+Сервер: `http://localhost:5000`. Якщо адміністратора ще немає, він створюється з `ADMIN_EMAIL` і `ADMIN_PASSWORD`.
 
-```text
-http://localhost:5000
-```
-
-2. Frontend
+Запуск frontend:
 
 ```bash
 cd autoria-frontend
 npm install
+npm run dev
 ```
 
-Створи файл `autoria-frontend/.env`:
+За потреби створи `autoria-frontend/.env`:
 
 ```env
 VITE_API_URL=http://localhost:5000/api
 ```
 
-Запуск frontend:
-
-```bash
-npm run dev
-```
-
-Frontend зазвичай працює на:
-
-```text
-http://localhost:5173
-```
-
-Основні API endpoints
-
-| Метод  | Endpoint                       | Опис                      |
-|--------|--------------------------------|---------------------------|
-| POST   | `/api/auth/register`           | Реєстрація                |
-| POST   | `/api/auth/login`              | Авторизація               |
-| POST   | `/api/auth/upgrade-to-premium` | Mock-оновлення до PREMIUM |
-| GET    | `/api/ads`                     | Отримати оголошення       |
-| POST   | `/api/ads`                     | Створити оголошення       |
-| DELETE | `/api/ads/:id`                 | Видалити оголошення       |
-| GET    | `/api/ads/:id/analytics`       | Отримати аналітику        |
-
-(mock-оплата: авторизований користувач може оновити власний акаунт до PREMIUM через API.)
-
-Для захищених endpoint-ів потрібно передати JWT:
-
-```text
-Authorization: Bearer YOUR_JWT_TOKEN
-```
-
-Postman:
-Колекція запитів знаходиться у файлі:
-
-```text
-AutoRia_Postman_Collection.json
-```
-
-Її можна імпортувати через кнопку **Import** у Postman.
+Frontend: `http://localhost:5173`.
 
 Docker:
-Для запуску через Docker:
 
 ```bash
 docker compose up --build
 ```
+
+API
+
+| Метод | Endpoint | Хто |
+| --- | --- | --- |
+| POST | `/api/auth/register` | гість, роль `BUYER` або `SELLER` |
+| POST | `/api/auth/login` | гість |
+| POST | `/api/auth/upgrade-to-premium` | продавець |
+| GET | `/api/brands` | усі |
+| POST | `/api/brands/missing` | продавець |
+| GET | `/api/brands/missing` | адміністратор |
+| GET | `/api/ads` | усі, неактивні бачить власник і персонал |
+| GET | `/api/ads/:id` | усі, перегляд рахується для чужого активного оголошення |
+| POST | `/api/ads` | продавець |
+| PATCH | `/api/ads/:id` | власник |
+| DELETE | `/api/ads/:id` | власник, менеджер, адміністратор |
+| GET | `/api/ads/:id/analytics` | PREMIUM-власник |
+| GET | `/api/users` | менеджер, адміністратор |
+| POST | `/api/users/managers` | адміністратор |
+| PATCH | `/api/users/:id/ban` | менеджер, адміністратор |
+
+Для закритих запитів: `Authorization: Bearer YOUR_JWT_TOKEN`.
+
+Postman-колекція: `AutoRia_Postman_Collection.json`.
