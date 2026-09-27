@@ -1,201 +1,260 @@
-import {NextFunction, Request, Response} from 'express';
-import {CarAd} from '../models/CarAd.js';
-import {User} from '../models/User.js';
+import {Response} from 'express';
+import {Permission} from '../constants/permissions.js';
+import {HttpError} from '../errors/HttpError.js';
 import {AuthRequest} from '../middleware/authMiddleware.js';
-import {AccountType, AdStatus, UserRole,} from '../types/index.js';
+import {AdView} from '../models/AdView.js';
+import {CarAd} from '../models/CarAd.js';
+import {ContactRequest} from '../models/ContactRequest.js';
+import {User} from '../models/User.js';
+import {
+    applyProfanityStatus,
+    assertCanCreateListing,
+    copyInputOntoAd,
+    ensureDailyPriceSync,
+    moderationMessage,
+    parseAdInput,
+    toAdDto,
+} from '../services/adService.js';
+import {sendEmailToManagers} from '../services/emailService.js';
+import {AccountType, AdStatus, ContactPurpose, UserRole} from '../types/index.js';
 
-const BAD_WORDS = /пиздец|хуй|блядь|ебать|сука|мудак|пизда|хер|ебучий|засранец|говно|дерьмо|срань/i;
-const RATES = {USD_UAH: 41, EUR_UAH: 45, USD_EUR: 0.92};
-const MOCK_ADS = [
-    {
-        sellerId: 'mock-7',
-        title: 'BMW 3 Series 2019',
-        description: 'Стан ідеал!',
-        make: 'BMW',
-        model: '3 Series',
-        region: 'Київ',
-        originalPrice: 25000,
-        originalCurrency: 'USD',
-        calculatedPrices: {USD: 25000, UAH: 1025000, EUR: 23000},
-        status: 'ACTIVE',
-        badWordsAttempts: 0,
-        views: 142
-    },
-    {
-        sellerId: 'mock-12',
-        title: 'Audi A4 Allroad 2020',
-        description: 'Привезена з Німеччини...стан 9/10, за всіма питаннями пишіть',
-        make: 'Audi',
-        model: 'A4',
-        region: 'Львів',
-        originalPrice: 31000,
-        originalCurrency: 'USD',
-        calculatedPrices: {USD: 31000, UAH: 1271000, EUR: 28520},
-        status: 'ACTIVE',
-        badWordsAttempts: 0,
-        views: 89
-    },
-    {
-        sellerId: 'mock-146',
-        title: 'Volkswagen Passat B8 2018',
-        description: 'Продаю авто, без пробігу, в чудовому стані. Пишіть!',
-        make: 'Volkswagen',
-        model: 'Passat',
-        region: 'Одеса',
-        originalPrice: 16500,
-        originalCurrency: 'USD',
-        calculatedPrices: {USD: 16500, UAH: 676500, EUR: 15180},
-        status: 'ACTIVE',
-        badWordsAttempts: 0,
-        views: 210
-    }
-];
+async function notifyManagers(adId: string, sellerEmail: string, title: string) {
+    await sendEmailToManagers({
+        adId,
+        subject: 'Оголошення потребує ручної перевірки',
+        body: [
+            'Автоматична перевірка не пропустила оголошення після 3 редагувань.',
+            `Оголошення: ${adId}`,
+            `Заголовок: ${title}`,
+            `Продавець: ${sellerEmail}`,
+            'Перевірте текст і або активуйте оголошення, або видаліть його.',
+        ].join('\n'),
+    });
+}
 
-export const getAds = async (_req: Request, res: Response, next: NextFunction) => {
-    try {
-        const dbAds = await CarAd.find().lean();
-        const allAds = [...MOCK_ADS, ...dbAds];
-        return res.json(allAds);
-    } catch (error) {
-        next(error);
-    }
+export const getAds = async (req: AuthRequest, res: Response) => {
+    await ensureDailyPriceSync();
+    const filter: Record<string, unknown> = {status: AdStatus.ACTIVE};
+    if (req.query.make) filter.make = String(req.query.make);
+    if (req.query.model) filter.model = String(req.query.model);
+    if (req.query.region) filter.region = String(req.query.region);
+
+    const ads = await CarAd.find(filter).sort({createdAt: -1}).limit(100);
+    res.json(ads.map(toAdDto));
 };
 
-export const createAd = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-        const authReq = req as AuthRequest;
-        const sellerId = authReq.user?.userId;
-
-        if (!sellerId) {
-            return res.status(401).json({message: 'Не авторизовано'});
-        }
-
-        const user = await User.findById(sellerId);
-        if (!user) {
-            return res.status(404).json({message: 'Користувача не знайдено'});
-        }
-
-        const {title, description, make, model, region, originalPrice, originalCurrency} = req.body;
-
-        if (!title || !description || !make || !model || !region || !originalPrice || !originalCurrency) {
-            return res.status(400).json({message: 'Всі поля обов\'язкові'});
-        }
-
-        if (user.role !== UserRole.SELLER) {
-            return res.status(403).json({
-                message: 'Створювати оголошення може лише продавець',
-            });
-        }
-        if (user.accountType === AccountType.BASIC) {
-            const activeAdsCount = await CarAd.countDocuments({
-                sellerId,
-                status: {
-                    $in: [AdStatus.ACTIVE, AdStatus.PENDING_EDIT],
-                },
-            });
-
-            if (activeAdsCount >= 1) {
-                return res.status(403).json({
-                    message:'BASIC-акаунт може мати лише одне активне оголошення. Перейдіть на PREMIUM для необмеженої кількості.',
-                });
-            }
-        }
-
-        const fullText = `${title} ${description}`;
-        if (BAD_WORDS.test(fullText)) {
-            return res.status(400).json({
-                message:'Виявлено нецензурну лексику. Відредагуйте текст оголошення.',
-            });
-        }
-        const price = Number(originalPrice);
-        if (isNaN(price) || price <= 0) {
-            return res.status(400).json({message: 'Невалідна ціна'});
-        }
-
-        let calculatedPrices = {USD: 0, UAH: 0, EUR: 0};
-
-        if (originalCurrency === 'USD') {
-            calculatedPrices = {
-                USD: price,
-                UAH: Math.round(price * RATES.USD_UAH),
-                EUR: Math.round(price * RATES.USD_EUR * 100) / 100
-            };
-        } else if (originalCurrency === 'EUR') {
-            calculatedPrices = {
-                EUR: price,
-                USD: Math.round((price / RATES.USD_EUR) * 100) / 100,
-                UAH: Math.round(price * RATES.EUR_UAH)
-            };
-        } else if (originalCurrency === 'UAH') {
-            calculatedPrices = {
-                UAH: price,
-                USD: Math.round((price / RATES.USD_UAH) * 100) / 100,
-                EUR: Math.round((price / RATES.EUR_UAH) * 100) / 100
-            };
-        } else {
-            return res.status(400).json({message: 'Невалідна валюта'});
-        }
-
-        const newAd = await CarAd.create({sellerId, title, description, make, model, region, originalPrice: price, originalCurrency, calculatedPrices, status: AdStatus.ACTIVE, badWordsAttempts: 0, views: 0});
-        return res.status(201).json(newAd);
-    } catch (error) {
-        next(error);
-    }
+export const getMyAds = async (req: AuthRequest, res: Response) => {
+    await ensureDailyPriceSync();
+    const ads = await CarAd.find({sellerId: req.auth?.id}).sort({createdAt: -1});
+    res.json(ads.map(toAdDto));
 };
 
-export const deleteAd = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-        const authReq = req as AuthRequest;
-        const {id} = req.params;
-        const userId = authReq.user?.userId;
-        const userRole = authReq.user?.role;
-
-        if (String(id).startsWith('mock-')) {
-            return res.status(403).json({message: 'Неможливо видалити приклад'});
-        }
-        const ad = await CarAd.findById(id);
-
-        if (!ad) {
-            return res.status(404).json({message: 'Оголошення не знайдено'});
-        }
-        if (String(ad.sellerId) !== String(userId) && userRole !== 'ADMIN' && userRole !== 'MANAGER') {
-            return res.status(403).json({message: 'Немає прав для видалення'});
-        }
-        await CarAd.findByIdAndDelete(id);
-        return res.json({message: 'Оголошення видалено'});
-    } catch (error) {
-        next(error);
+export const getAd = async (req: AuthRequest, res: Response) => {
+    await ensureDailyPriceSync();
+    const ad = await CarAd.findById(req.params.id);
+    if (!ad) {
+        throw new HttpError(404, 'Оголошення не знайдено');
     }
+
+    const isOwner = req.auth?.id && String(ad.sellerId) === req.auth.id;
+    const canModerate = req.auth?.permissions.includes(Permission.AD_MODERATE);
+    if (ad.status !== AdStatus.ACTIVE && !isOwner && !canModerate) {
+        throw new HttpError(404, 'Оголошення не знайдено');
+    }
+
+    if (ad.status === AdStatus.ACTIVE) {
+        await AdView.create({adId: ad._id, viewedAt: new Date()});
+    }
+
+    res.json(toAdDto(ad));
 };
 
-export const getAdAnalytics = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-        const authReq = req as AuthRequest;
-        const {id} = req.params;
-        const userId = authReq.user?.userId;
-        const user = await User.findById(userId);
-
-        if (user?.accountType !== 'PREMIUM') {
-            return res.status(403).json({message: 'Тільки PREMIUM користувачі'});
-        }
-        const ad = await CarAd.findById(id);
-        if (!ad || String(ad.sellerId) !== String(userId)) {
-            return res.status(404).json({message: 'Оголошення не знайдено'});
-        }
-        const regionAvg = await CarAd.aggregate([
-            {$match: {region: ad.region, make: ad.make, model: ad.model}},
-            {$group: {_id: null, avg: {$avg: '$originalPrice'}}}
-        ]);
-        const ukraineAvg = await CarAd.aggregate([
-            {$match: {make: ad.make, model: ad.model}},
-            {$group: {_id: null, avg: {$avg: '$originalPrice'}}}
-        ]);
-        return res.json({
-            views: ad.views,
-            avgPriceRegion: regionAvg[0]?.avg || 0,
-            avgPriceUkraine: ukraineAvg[0]?.avg || 0
-        });
-    } catch (error) {
-        next(error);
+export const createAd = async (req: AuthRequest, res: Response) => {
+    const user = await User.findById(req.auth?.id);
+    if (!user) {
+        throw new HttpError(404, 'Користувача не знайдено');
     }
+
+    await assertCanCreateListing(user);
+    const input = await parseAdInput(req.body ?? {});
+    const ad = new CarAd({sellerId: user._id});
+    await copyInputOntoAd(ad, input);
+    const moderation = applyProfanityStatus(ad, true);
+    await ad.save();
+
+    res.status(201).json({
+        message: moderationMessage(ad, moderation.becameInactive),
+        moderation: {
+            passed: ad.status === AdStatus.ACTIVE,
+            status: ad.status,
+            attemptsUsed: ad.badWordsAttempts,
+            attemptsLeft: ad.status === AdStatus.PENDING_EDIT ? 3 - ad.badWordsAttempts : 0,
+        },
+        ad: toAdDto(ad),
+    });
+};
+
+export const updateAd = async (req: AuthRequest, res: Response) => {
+    const ad = await CarAd.findById(req.params.id);
+    if (!ad) {
+        throw new HttpError(404, 'Оголошення не знайдено');
+    }
+
+    const isOwner = String(ad.sellerId) === req.auth?.id;
+    const isAdmin = req.auth?.role === UserRole.ADMIN;
+    if (!isOwner && !isAdmin) {
+        throw new HttpError(403, 'Редагувати можна лише власне оголошення');
+    }
+    if (isOwner && !req.auth?.permissions.includes(Permission.AD_UPDATE_OWN) && !isAdmin) {
+        throw new HttpError(403, 'Недостатньо прав для редагування');
+    }
+
+    const input = await parseAdInput({
+        title: req.body?.title ?? ad.title,
+        description: req.body?.description ?? ad.description,
+        make: req.body?.make ?? ad.make,
+        model: req.body?.model ?? ad.model,
+        region: req.body?.region ?? ad.region,
+        originalPrice: req.body?.originalPrice ?? ad.originalPrice,
+        originalCurrency: req.body?.originalCurrency ?? ad.originalCurrency,
+    });
+
+    await copyInputOntoAd(ad, input);
+    const moderation = applyProfanityStatus(ad, false);
+    await ad.save();
+
+    if (moderation.becameInactive) {
+        const seller = await User.findById(ad.sellerId);
+        await notifyManagers(String(ad._id), seller?.email ?? 'unknown', ad.title);
+    }
+
+    res.json({
+        message: moderationMessage(ad, moderation.becameInactive),
+        moderation: {
+            passed: ad.status === AdStatus.ACTIVE,
+            status: ad.status,
+            attemptsUsed: ad.badWordsAttempts,
+            attemptsLeft: ad.status === AdStatus.PENDING_EDIT ? 3 - ad.badWordsAttempts : 0,
+        },
+        ad: toAdDto(ad),
+    });
+};
+
+export const deleteAd = async (req: AuthRequest, res: Response) => {
+    const ad = await CarAd.findById(req.params.id);
+    if (!ad) {
+        throw new HttpError(404, 'Оголошення не знайдено');
+    }
+
+    const isOwner = String(ad.sellerId) === req.auth?.id;
+    const canDeleteAny = req.auth?.permissions.includes(Permission.AD_DELETE_ANY);
+    const canDeleteOwn = req.auth?.permissions.includes(Permission.AD_DELETE_OWN);
+    if (canDeleteAny || (isOwner && canDeleteOwn)) {
+        await CarAd.findByIdAndDelete(ad._id);
+        res.json({message: 'Оголошення видалено'});
+        return;
+    }
+    throw new HttpError(403, 'Немає прав для видалення');
+};
+
+export const getAdAnalytics = async (req: AuthRequest, res: Response) => {
+    const ad = await CarAd.findById(req.params.id);
+    if (!ad) {
+        throw new HttpError(404, 'Оголошення не знайдено');
+    }
+
+    const isOwner = String(ad.sellerId) === req.auth?.id;
+    const isAdmin = req.auth?.role === UserRole.ADMIN;
+    if (!isOwner && !isAdmin) {
+        throw new HttpError(403, 'Статистика доступна власнику оголошення');
+    }
+    if (req.auth?.accountType !== AccountType.PREMIUM && !isAdmin) {
+        throw new HttpError(403, 'Статистика оголошень доступна лише для PREMIUM-акаунта');
+    }
+
+    const now = Date.now();
+    const dayAgo = new Date(now - 24 * 60 * 60 * 1000);
+    const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+    const monthAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
+
+    const [total, day, week, month] = await Promise.all([
+        AdView.countDocuments({adId: ad._id}),
+        AdView.countDocuments({adId: ad._id, viewedAt: {$gte: dayAgo}}),
+        AdView.countDocuments({adId: ad._id, viewedAt: {$gte: weekAgo}}),
+        AdView.countDocuments({adId: ad._id, viewedAt: {$gte: monthAgo}}),
+    ]);
+
+    const baseMatch = {status: AdStatus.ACTIVE, make: ad.make, model: ad.model};
+    const [regionStats, ukraineStats] = await Promise.all([
+        CarAd.aggregate([
+            {$match: {...baseMatch, region: ad.region}},
+            {$group: {_id: null, avg: {$avg: '$calculatedPrices.UAH'}, count: {$sum: 1}}},
+        ]),
+        CarAd.aggregate([
+            {$match: baseMatch},
+            {$group: {_id: null, avg: {$avg: '$calculatedPrices.UAH'}, count: {$sum: 1}}},
+        ]),
+    ]);
+
+    const avgPriceRegion = Math.round((regionStats[0]?.avg ?? 0) * 100) / 100;
+    const avgPriceUkraine = Math.round((ukraineStats[0]?.avg ?? 0) * 100) / 100;
+
+    res.json({
+        adId: String(ad._id),
+        currency: 'UAH',
+        regionName: ad.region,
+        views: {total, day, week, month},
+        avgPriceRegion,
+        avgPriceUkraine,
+        samples: {
+            region: regionStats[0]?.count ?? 0,
+            ukraine: ukraineStats[0]?.count ?? 0,
+        },
+        listingPrice: {
+            originalPrice: ad.originalPrice,
+            originalCurrency: ad.originalCurrency,
+            calculatedPrices: ad.calculatedPrices,
+            exchangeRate: ad.exchangeRate,
+        },
+    });
+};
+
+export const contactSeller = async (req: AuthRequest, res: Response) => {
+    const ad = await CarAd.findById(req.params.id);
+    if (!ad || ad.status !== AdStatus.ACTIVE) {
+        throw new HttpError(404, 'Активне оголошення не знайдено');
+    }
+    if (String(ad.sellerId) === req.auth?.id) {
+        throw new HttpError(400, 'Не можна звʼязатися із самим собою');
+    }
+
+    const message = String(req.body?.message ?? '').trim();
+    const purpose = String(req.body?.purpose ?? ContactPurpose.QUESTION).toUpperCase();
+    if (!message) {
+        throw new HttpError(400, 'Напишіть повідомлення продавцю');
+    }
+    if (!Object.values(ContactPurpose).includes(purpose as ContactPurpose)) {
+        throw new HttpError(400, 'purpose має бути VIEWING, TEST_DRIVE або QUESTION');
+    }
+
+    const contact = await ContactRequest.create({
+        adId: ad._id,
+        buyerId: req.auth?.id,
+        sellerId: ad.sellerId,
+        message,
+        purpose,
+    });
+
+    res.status(201).json({
+        message: 'Повідомлення надіслано продавцю',
+        contact,
+    });
+};
+
+export const listContacts = async (req: AuthRequest, res: Response) => {
+    const userId = req.auth?.id;
+    const contacts = await ContactRequest.find({
+        $or: [{buyerId: userId}, {sellerId: userId}],
+    }).sort({createdAt: -1});
+    res.json(contacts);
 };

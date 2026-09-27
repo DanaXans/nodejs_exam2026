@@ -55,7 +55,7 @@ export const App: React.FC = () => {
         originalCurrency: string;
     }) => {
         try {
-            const data = await apiCall<{ message: string }>('/ads', {method: 'POST', body: JSON.stringify(adData)});
+            const data = await apiCall<{message: string}>('/ads', {method: 'POST', body: JSON.stringify(adData)});
             alert(data.message || 'Оголошення додано');
             setIsFormOpen(false);
             await loadAds();
@@ -67,11 +67,7 @@ export const App: React.FC = () => {
 
     const handleUpgrade = async () => {
         try {
-            const data = await apiCall<{
-                message: string;
-                token: string;
-                user: User
-            }>('/auth/upgrade-to-premium', {method: 'POST'});
+            const data = await apiCall<{message: string; token: string; user: User}>('/auth/upgrade-to-premium', {method: 'POST'});
             localStorage.setItem('token', data.token);
             localStorage.setItem('user', JSON.stringify(data.user));
             setUser(data.user);
@@ -110,8 +106,7 @@ export const App: React.FC = () => {
                     return;
                 }
                 setIsFormOpen(true);
-            }} onLogout={handleLogout} accountType={user?.accountType} onUpgrade={handleUpgrade}
-                    onOpenLogin={() => setIsLoginOpen(true)}/>
+            }} onLogout={handleLogout} accountType={user?.accountType} onUpgrade={handleUpgrade} onOpenLogin={() => setIsLoginOpen(true)}/>
             <main style={{maxWidth: '1280px', margin: '0 auto', padding: '20px'}}>
                 <h1 style={{fontSize: '28px', marginBottom: '20px', fontWeight: 'bold'}}>Оголошення про продаж авто</h1>
                 {loading && (
@@ -119,21 +114,11 @@ export const App: React.FC = () => {
                 )}
 
                 {!loading && ads.length === 0 && (
-                    <div style={{
-                        textAlign: 'center',
-                        padding: '40px 20px',
-                        backgroundColor: '#2d2d2d',
-                        borderRadius: '8px',
-                        color: '#b0b0b0'
-                    }}>Оголошень поки що немає</div>
+                    <div style={{textAlign: 'center', padding: '40px 20px', backgroundColor: '#2d2d2d', borderRadius: '8px', color: '#b0b0b0'}}>Оголошень поки що немає</div>
                 )}
 
                 {!loading && ads.length > 0 && (
-                    <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-                        gap: '20px'
-                    }}>
+                    <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px'}}>
                         {ads.map((ad: CarAd) => (
                             <AdCard key={(ad as any)._id || (ad as any).id} ad={ad} user={user}
                                     onShowAnalytics={handleShowAnalytics} onDelete={handleDeleteAd}/>
