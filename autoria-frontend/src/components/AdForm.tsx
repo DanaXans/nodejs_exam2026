@@ -34,17 +34,27 @@ export const AdForm: React.FC<AdFormProps> = ({isOpen, onClose, onSubmit}) => {
     const [models, setModels] = useState<string[]>([]);
     const [missingName, setMissingName] = useState('');
     const [missingType, setMissingType] = useState<'MAKE' | 'MODEL'>('MAKE');
+    const [catalogError, setCatalogError] = useState('');
 
     useEffect(() => {
         if (!isOpen) return;
-        apiCall<MakeItem[]>('/catalog/makes').then(setMakes).catch(() => setMakes([]));
-        apiCall<string[]>('/catalog/regions').then(setRegions).catch(() => setRegions([]));
+        setCatalogError('');
+        apiCall<MakeItem[]>('/catalog/makes')
+            .then(setMakes)
+            .catch((error: unknown) => {
+                setMakes([]);
+                setCatalogError(error instanceof Error ? error.message : 'Не вдалося завантажити марки');
+            });
+        apiCall<string[]>('/catalog/regions')
+            .then(setRegions)
+            .catch(() => setRegions([]));
     }, [isOpen]);
 
     useEffect(() => {
         const selected = makes.find((item) => item.name === make);
-        setModels(selected?.models ?? []);
-        setModel('');
+        const nextModels = selected?.models ?? [];
+        setModels(nextModels);
+        setModel((current) => nextModels.includes(current) ? current : '');
     }, [make, makes]);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -109,6 +119,7 @@ export const AdForm: React.FC<AdFormProps> = ({isOpen, onClose, onSubmit}) => {
         <div style={{position: 'fixed', inset: 0, backgroundColor: 'rgba(0, 0, 0, 0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50}}>
             <div style={{backgroundColor: '#2d2d2d', border: '1px solid #404040', borderRadius: '12px', padding: '32px', maxWidth: '500px', width: '90%', maxHeight: '80vh', overflowY: 'auto', boxShadow: '0 20px 25px rgba(0, 0, 0, 0.3)'}}>
                 <h2 style={{fontSize: '20px', fontWeight: 'bold', marginBottom: '24px', color: '#e0e0e0'}}>Додати нове оголошення</h2>
+                {catalogError && <p style={{margin: '0 0 12px', color: '#f87171', fontSize: '13px'}}>{catalogError}</p>}
                 <form onSubmit={handleSubmit} style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
                     <input type="text" placeholder="Заголовок оголошення" value={title} onChange={(e) => setTitle(e.target.value)} style={fieldStyle}/>
                     <select value={make} onChange={(e) => setMake(e.target.value)} required style={fieldStyle}>

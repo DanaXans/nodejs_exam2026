@@ -6,13 +6,22 @@ import {errorMiddleware} from './middleware/errorMiddleware.js';
 import apiRouter from './routes/index.js';
 import {seedDatabase} from './seed/seed.js';
 
+function isLocalOrigin(origin: string): boolean {
+    try {
+        const hostname = new URL(origin).hostname;
+        return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]';
+    } catch {
+        return false;
+    }
+}
+
 export function createApp() {
     const app = express();
     const {clientUrl} = getConfig();
 
     app.use(cors({
         origin(origin, callback) {
-            if (!origin || origin === clientUrl) {
+            if (!origin || origin === clientUrl || isLocalOrigin(origin)) {
                 callback(null, true);
                 return;
             }

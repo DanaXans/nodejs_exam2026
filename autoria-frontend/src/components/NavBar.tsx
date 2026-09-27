@@ -31,7 +31,7 @@ export const Navbar: React.FC<NavbarProps> = ({user, onOpenForm, onLogout, accou
                     )}
                     {user ? (
                         <>
-                            {user.role === 'SELLER' && (
+                            {user.role !== 'BUYER' && user.role !== 'MANAGER' && user.role !== 'ADMIN' && (
                                 <button onClick={onOpenForm} style={{padding: '8px 16px', backgroundColor: '#2b7dd4', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: '500'}}>Додати оголошення</button>
                             )}
                             <button onClick={onLogout} style={{padding: '8px 16px', backgroundColor: '#3a3a3a', color: '#e0e0e0', border: '1px solid #404040', borderRadius: '6px', cursor: 'pointer', fontSize: '14px'}}>Вихід</button>

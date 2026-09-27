@@ -20,6 +20,7 @@ export const App: React.FC = () => {
     const [isLoginOpen, setIsLoginOpen] = useState(false);
     const [isRegisterMode, setIsRegisterMode] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [loadError, setLoadError] = useState('');
 
     useEffect(() => {
         loadAds();
@@ -30,9 +31,11 @@ export const App: React.FC = () => {
             setLoading(true);
             const data = await apiCall<CarAd[]>('/ads');
             setAds(data);
+            setLoadError('');
         } catch (err) {
             console.error('Помилка завантаження оголошень:', err);
             setAds([]);
+            setLoadError(err instanceof Error ? err.message : 'Не вдалося завантажити оголошення');
         } finally {
             setLoading(false);
         }
@@ -109,6 +112,9 @@ export const App: React.FC = () => {
             }} onLogout={handleLogout} accountType={user?.accountType} onUpgrade={handleUpgrade} onOpenLogin={() => setIsLoginOpen(true)}/>
             <main style={{maxWidth: '1280px', margin: '0 auto', padding: '20px'}}>
                 <h1 style={{fontSize: '28px', marginBottom: '20px', fontWeight: 'bold'}}>Оголошення про продаж авто</h1>
+                {loadError && (
+                    <div style={{marginBottom: '16px', padding: '12px 16px', backgroundColor: '#3a2a2a', borderRadius: '8px', color: '#f87171'}}>{loadError}</div>
+                )}
                 {loading && (
                     <div style={{textAlign: 'center', padding: '20px', color: '#b0b0b0'}}>Завантаження...</div>
                 )}
@@ -149,7 +155,7 @@ export const App: React.FC = () => {
                                    setIsRegisterMode(false);
                                    alert(isRegisterMode ? 'Успішна реєстрація!' : 'Успішний вхід!');
                                } catch (err: any) {
-                                   alert(err.message || 'Помилка');
+                                   throw new Error(err.message || 'Помилка');
                                }
                            }}/>
             )}
