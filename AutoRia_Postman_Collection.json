@@ -1,64 +1,354 @@
 {
   "info": {
-    "name": "AutoRia.clone",
-    "description": "Платформа для продажу авто",
-    "version": "1.0.0"
+    "name": "AutoRia clone",
+    "description": "Перевірка API платформи продажу авто. Спочатку виконайте запити логіну: скрипти збережуть токени в змінні колекції.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000"
+    },
+    {
+      "key": "admin_token",
+      "value": ""
+    },
+    {
+      "key": "premium_token",
+      "value": ""
+    },
+    {
+      "key": "basic_token",
+      "value": ""
+    },
+    {
+      "key": "buyer_token",
+      "value": ""
+    },
+    {
+      "key": "manager_token",
+      "value": ""
+    },
+    {
+      "key": "new_seller_token",
+      "value": ""
+    },
+    {
+      "key": "ad_id",
+      "value": ""
+    },
+    {
+      "key": "basic_ad_id",
+      "value": ""
+    },
+    {
+      "key": "pending_ad_id",
+      "value": ""
+    },
+    {
+      "key": "catalog_request_id",
+      "value": ""
+    },
+    {
+      "key": "buyer_id",
+      "value": ""
+    },
+    {
+      "key": "new_seller_id",
+      "value": ""
+    },
+    {
+      "key": "dealership_id",
+      "value": ""
+    }
+  ],
   "item": [
     {
-      "name": "Auth",
+      "name": "Health",
       "item": [
         {
-          "name": "Register",
+          "name": "Health",
           "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": "{{base_url}}/api/auth/register",
-            "body": {
-              "mode": "raw",
-              "raw": "{\"name\": \"Ivan\", \"email\": \"ivan@test.com\", \"password\": \"123456\"}"
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Login",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": "{{base_url}}/api/auth/login",
-            "body": {
-              "mode": "raw",
-              "raw": "{\"email\": \"ivan@test.com\", \"password\": \"123456\"}"
-            }
-          },
-          "response": []
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/health"
+          }
         }
       ]
     },
     {
-      "name": "Ads",
+      "name": "Auth",
       "item": [
         {
-          "name": "Get All Ads",
+          "name": "Login admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "pm.collectionVariables.set('admin_token', data.token);"
+                ]
+              }
+            }
+          ],
           "request": {
-            "method": "GET",
-            "url": "{{base_url}}/api/ads"
-          },
-          "response": []
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@autoria.local\",\n  \"password\": \"Admin123!\"\n}"
+            },
+            "url": "{{base_url}}/api/auth/login"
+          }
         },
         {
-          "name": "Create Ad",
+          "name": "Login premium seller",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "pm.collectionVariables.set('premium_token', data.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"seller.premium@autoria.local\",\n  \"password\": \"Seller123!\"\n}"
+            },
+            "url": "{{base_url}}/api/auth/login"
+          }
+        },
+        {
+          "name": "Login basic seller",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "pm.collectionVariables.set('basic_token', data.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"seller.basic@autoria.local\",\n  \"password\": \"Seller123!\"\n}"
+            },
+            "url": "{{base_url}}/api/auth/login"
+          }
+        },
+        {
+          "name": "Login buyer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data.token) pm.collectionVariables.set('buyer_token', data.token);",
+                  "if (data.user) pm.collectionVariables.set('buyer_id', data.user.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"buyer@autoria.local\",\n  \"password\": \"Buyer123!\"\n}"
+            },
+            "url": "{{base_url}}/api/auth/login"
+          }
+        },
+        {
+          "name": "Register seller",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data.token) pm.collectionVariables.set('new_seller_token', data.token);",
+                  "if (data.user) pm.collectionVariables.set('new_seller_id', data.user.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Олена\",\n  \"email\": \"olena@autoria.local\",\n  \"password\": \"123456\",\n  \"role\": \"SELLER\"\n}"
+            },
+            "url": "{{base_url}}/api/auth/register"
+          }
+        },
+        {
+          "name": "Register buyer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Ігор\",\n  \"email\": \"igor@autoria.local\",\n  \"password\": \"123456\",\n  \"role\": \"BUYER\"\n}"
+            },
+            "url": "{{base_url}}/api/auth/register"
+          }
+        },
+        {
+          "name": "Register manager is forbidden",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Самозванець\",\n  \"email\": \"fake.manager@autoria.local\",\n  \"password\": \"123456\",\n  \"role\": \"MANAGER\"\n}"
+            },
+            "url": "{{base_url}}/api/auth/register"
+          }
+        },
+        {
+          "name": "Me",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{premium_token}}"
+              }
+            ],
+            "url": "{{base_url}}/api/auth/me"
+          }
+        },
+        {
+          "name": "Upgrade to premium (mock payment)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data.token) pm.collectionVariables.set('new_seller_token', data.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{new_seller_token}}"
+              }
+            ],
+            "url": "{{base_url}}/api/auth/upgrade-to-premium"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Catalog",
+      "item": [
+        {
+          "name": "Makes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/catalog/makes"
+          }
+        },
+        {
+          "name": "BMW models",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/catalog/makes/BMW/models"
+          }
+        },
+        {
+          "name": "Regions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/catalog/regions"
+          }
+        },
+        {
+          "name": "PrivatBank rate for today",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/catalog/rates"
+          }
+        },
+        {
+          "name": "Request missing make",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data.request) pm.collectionVariables.set('catalog_request_id', data.request._id);"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -68,60 +358,578 @@
               },
               {
                 "key": "Authorization",
-                "value": "Bearer {{token}}"
+                "value": "Bearer {{premium_token}}"
               }
             ],
-            "url": "{{base_url}}/api/ads",
             "body": {
               "mode": "raw",
-              "raw": "{\"title\": \"BMW X5 2019\", \"description\": \"Отличное состояние\", \"make\": \"BMW\", \"model\": \"X5\", \"region\": \"Киев\", \"originalPrice\": 25000, \"originalCurrency\": \"USD\"}"
-            }
-          },
-          "response": []
+              "raw": "{\n  \"type\": \"MAKE\",\n  \"name\": \"Tesla\"\n}"
+            },
+            "url": "{{base_url}}/api/catalog/requests"
+          }
         },
         {
-          "name": "Delete Ad",
-          "request": {
-            "method": "DELETE",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": "{{base_url}}/api/ads/{{ad_id}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Get Ad Analytics (PREMIUM)",
+          "name": "List catalog requests",
           "request": {
             "method": "GET",
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{token}}"
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": "{{base_url}}/api/catalog/requests?status=PENDING"
+          }
+        },
+        {
+          "name": "Approve catalog request",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"APPROVE\"\n}"
+            },
+            "url": "{{base_url}}/api/catalog/requests/{{catalog_request_id}}"
+          }
+        },
+        {
+          "name": "Request missing model",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data.request) pm.collectionVariables.set('catalog_request_id', data.request._id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{premium_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"MODEL\",\n  \"make\": \"Tesla\",\n  \"name\": \"Model 3\"\n}"
+            },
+            "url": "{{base_url}}/api/catalog/requests"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ads",
+      "item": [
+        {
+          "name": "List active ads",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "const ad = data.find((item) => item.make === 'BMW' && item.model === 'X5');",
+                  "if (ad) pm.collectionVariables.set('ad_id', ad._id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/ads"
+          }
+        },
+        {
+          "name": "Get one ad (counts a view)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/ads/{{ad_id}}"
+          }
+        },
+        {
+          "name": "My ads",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{premium_token}}"
+              }
+            ],
+            "url": "{{base_url}}/api/ads/mine"
+          }
+        },
+        {
+          "name": "Create ad as premium",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{premium_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"BMW X5 2020\",\n  \"description\": \"Сервісна книжка, без ДТП.\",\n  \"make\": \"BMW\",\n  \"model\": \"X5\",\n  \"region\": \"Київ\",\n  \"originalPrice\": 27000,\n  \"originalCurrency\": \"USD\"\n}"
+            },
+            "url": "{{base_url}}/api/ads"
+          }
+        },
+        {
+          "name": "Create first ad as basic",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data.ad) pm.collectionVariables.set('basic_ad_id', data.ad._id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{basic_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Daewoo Lanos\",\n  \"description\": \"Міське авто, їде своїм ходом.\",\n  \"make\": \"Daewoo\",\n  \"model\": \"Lanos\",\n  \"region\": \"Львівська область\",\n  \"originalPrice\": 1800,\n  \"originalCurrency\": \"EUR\"\n}"
+            },
+            "url": "{{base_url}}/api/ads"
+          }
+        },
+        {
+          "name": "Second basic ad is rejected",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{basic_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Друге авто\",\n  \"description\": \"Базовий акаунт не може виставити друге авто.\",\n  \"make\": \"Kia\",\n  \"model\": \"Ceed\",\n  \"region\": \"Київ\",\n  \"originalPrice\": 9000,\n  \"originalCurrency\": \"USD\"\n}"
+            },
+            "url": "{{base_url}}/api/ads"
+          }
+        },
+        {
+          "name": "Create ad with profanity",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data.ad) pm.collectionVariables.set('pending_ad_id', data.ad._id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{premium_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Підозріле авто\",\n  \"description\": \"Продаю машину, блядь, терміново.\",\n  \"make\": \"BMW\",\n  \"model\": \"X5\",\n  \"region\": \"Одеська область\",\n  \"originalPrice\": 10000,\n  \"originalCurrency\": \"USD\"\n}"
+            },
+            "url": "{{base_url}}/api/ads"
+          }
+        },
+        {
+          "name": "Edit profanity attempt",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{premium_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Підозріле авто\",\n  \"description\": \"Знову блядь в описі.\",\n  \"make\": \"BMW\",\n  \"model\": \"X5\",\n  \"region\": \"Одеська область\",\n  \"originalPrice\": 10000,\n  \"originalCurrency\": \"USD\"\n}"
+            },
+            "url": "{{base_url}}/api/ads/{{pending_ad_id}}"
+          }
+        },
+        {
+          "name": "Analytics for premium owner",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{premium_token}}"
               }
             ],
             "url": "{{base_url}}/api/ads/{{ad_id}}/analytics"
-          },
-          "response": []
+          }
+        },
+        {
+          "name": "Analytics denied for basic",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{basic_token}}"
+              }
+            ],
+            "url": "{{base_url}}/api/ads/{{ad_id}}/analytics"
+          }
+        },
+        {
+          "name": "Delete own ad",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{basic_token}}"
+              }
+            ],
+            "url": "{{base_url}}/api/ads/{{basic_ad_id}}"
+          }
         }
       ]
-    }
-  ],
-  "variable": [
-    {
-      "key": "base_url",
-      "value": "http://localhost:5000"
     },
     {
-      "key": "token",
-      "value": "your_token_here"
+      "name": "Moderation",
+      "item": [
+        {
+          "name": "Inactive ads",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": "{{base_url}}/api/moderation/ads?status=INACTIVE"
+          }
+        },
+        {
+          "name": "Manager emails",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{manager_token}}"
+              }
+            ],
+            "url": "{{base_url}}/api/moderation/emails"
+          }
+        },
+        {
+          "name": "Activate ad after review",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"ACTIVATE\"\n}"
+            },
+            "url": "{{base_url}}/api/moderation/ads/{{pending_ad_id}}"
+          }
+        }
+      ]
     },
     {
-      "key": "ad_id",
-      "value": "ad_id_here"
+      "name": "Users",
+      "item": [
+        {
+          "name": "Create manager",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('manager created', function () { pm.response.to.have.status(201); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Менеджер\",\n  \"email\": \"manager@autoria.local\",\n  \"password\": \"Manager123!\"\n}"
+            },
+            "url": "{{base_url}}/api/users/managers"
+          }
+        },
+        {
+          "name": "Login manager",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data.token) pm.collectionVariables.set('manager_token', data.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"manager@autoria.local\",\n  \"password\": \"Manager123!\"\n}"
+            },
+            "url": "{{base_url}}/api/auth/login"
+          }
+        },
+        {
+          "name": "List users",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{manager_token}}"
+              }
+            ],
+            "url": "{{base_url}}/api/users"
+          }
+        },
+        {
+          "name": "Ban buyer",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{manager_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"banned\": true,\n  \"reason\": \"спам в оголошеннях\"\n}"
+            },
+            "url": "{{base_url}}/api/users/{{buyer_id}}/ban"
+          }
+        },
+        {
+          "name": "Unban buyer",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"banned\": false\n}"
+            },
+            "url": "{{base_url}}/api/users/{{buyer_id}}/ban"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Contacts",
+      "item": [
+        {
+          "name": "Buyer contacts seller",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{buyer_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Можна тест-драйв у суботу?\",\n  \"purpose\": \"TEST_DRIVE\"\n}"
+            },
+            "url": "{{base_url}}/api/ads/{{ad_id}}/contact"
+          }
+        },
+        {
+          "name": "Seller inbox",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{premium_token}}"
+              }
+            ],
+            "url": "{{base_url}}/api/contacts"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dealerships",
+      "item": [
+        {
+          "name": "Create dealership",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data.dealership) pm.collectionVariables.set('dealership_id', data.dealership._id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Київ Авто\",\n  \"city\": \"Київ\"\n}"
+            },
+            "url": "{{base_url}}/api/dealerships"
+          }
+        },
+        {
+          "name": "List dealerships",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/dealerships"
+          }
+        },
+        {
+          "name": "Assign staff permissions",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{new_seller_id}}\",\n  \"permissions\": [\"ad:create\", \"dealership:view\"]\n}"
+            },
+            "url": "{{base_url}}/api/dealerships/{{dealership_id}}/staff"
+          }
+        }
+      ]
     }
   ]
 }

@@ -25,6 +25,7 @@ export interface User {
     email: string;
     role: UserRole;
     accountType: AccountType;
+    permissions?: string[];
     token?: string;
 }
 
@@ -32,6 +33,13 @@ export interface CalculatedPrices {
     UAH: number;
     USD: number;
     EUR: number;
+}
+
+export interface ExchangeRate {
+    source: string;
+    date: string;
+    USD_UAH: number;
+    EUR_UAH: number;
 }
 
 export interface CarAd {
@@ -45,16 +53,23 @@ export interface CarAd {
     originalCurrency: Currency;
     currency?: Currency;
     calculatedPrices: CalculatedPrices;
+    exchangeRate?: ExchangeRate;
     description: string;
     status?: string;
-    views: number;
+    views?: number;
     sellerId: string;
     createdAt?: string;
 }
 
 export interface AdAnalytics {
-    views: number;
+    views: {
+        total: number;
+        day: number;
+        week: number;
+        month: number;
+    };
     avgPriceRegion: number;
     avgPriceUkraine: number;
     regionName: string;
+    currency: string;
 }

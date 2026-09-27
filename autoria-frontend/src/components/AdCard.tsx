@@ -1,5 +1,6 @@
 import React from 'react';
 import type {CarAd, User} from '../types';
+import {apiCall} from '../api/axiosClient';
 
 interface AdCardProps {
     ad: CarAd;
@@ -53,9 +54,13 @@ export const AdCard: React.FC<AdCardProps> = ({ad, user, onShowAnalytics, onDele
                         {ad.originalPrice} {ad.originalCurrency}
                     </p>
                     <p style={{fontSize: '12px', color: '#b0b0b0', margin: '6px 0 0 0'}}>
-                        ≈ {Math.round(ad.calculatedPrices.USD)} USD | {Math.round(ad.calculatedPrices.UAH)} UAH
-                        | {ad.calculatedPrices.EUR} EUR
+                        Ціна продавця: {ad.originalPrice} {ad.originalCurrency}. Інші валюти: {Math.round(ad.calculatedPrices.USD)} USD, {Math.round(ad.calculatedPrices.UAH)} UAH, {ad.calculatedPrices.EUR} EUR.
                     </p>
+                    {ad.exchangeRate && (
+                        <p style={{fontSize: '12px', color: '#b0b0b0', margin: '6px 0 0 0'}}>
+                            Курс {ad.exchangeRate.source} на {ad.exchangeRate.date}: 1 USD = {ad.exchangeRate.USD_UAH} UAH, 1 EUR = {ad.exchangeRate.EUR_UAH} UAH.
+                        </p>
+                    )}
                 </div>
                 <div>
                     <p style={{
@@ -83,16 +88,8 @@ export const AdCard: React.FC<AdCardProps> = ({ad, user, onShowAnalytics, onDele
                         </button>
                     )}
                 </div>
-                {typeof ad.views === 'number' && (
-                    <p style={{
-                        fontSize: '12px',
-                        color: '#b0b0b0',
-                        margin: '12px 0 0 0',
-                        paddingTop: '12px',
-                        borderTop: '1px solid #404040'
-                    }}>
-                        Переглядів: <strong>{ad.views}</strong>
-                    </p>
+                {ad.status && ad.status !== 'ACTIVE' && (
+                    <p style={{fontSize: '12px', color: '#fbbf24', margin: '12px 0 0 0'}}>Статус: {ad.status}</p>
                 )}
             </div>
             <div style={{
@@ -118,6 +115,31 @@ export const AdCard: React.FC<AdCardProps> = ({ad, user, onShowAnalytics, onDele
                             onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}>
                         Аналітика
                     </button>
+                )}
+                {user && !isOwner && (
+                    <button onClick={async () => {
+                        const message = window.prompt('Повідомлення продавцю: огляд, тест-драйв або питання');
+                        if (!message) return;
+                        try {
+                            const data = await apiCall<{message: string}>(`/ads/${adId}/contact`, {
+                                method: 'POST',
+                                body: JSON.stringify({message, purpose: 'VIEWING'}),
+                            });
+                            alert(data.message);
+                        } catch (error) {
+                            alert(error instanceof Error ? error.message : 'Не вдалося надіслати повідомлення');
+                        }
+                    }} style={{
+                        flex: 1,
+                        padding: '8px 12px',
+                        backgroundColor: '#2b7dd4',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '12px',
+                        fontWeight: '500'
+                    }}>Звʼязатися</button>
                 )}
                 {isOwner && (
                     <button onClick={() => onDelete(adId)} style={{
