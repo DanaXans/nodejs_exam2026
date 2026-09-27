@@ -89,7 +89,16 @@ docker compose down
 
 ## Запуск без Docker
 
-Потрібні Node.js 18+ і MongoDB.
+Якщо Docker Desktop не запускається, бекенд можна підняти з тимчасовою базою в пам'яті. Окремий MongoDB не потрібен.
+
+```bash
+npm install
+npm run dev:local
+```
+
+API буде на `http://localhost:5000`. Це вікно треба залишити відкритим і в іншому запустити фронтенд.
+
+Звичайний запуск зі своєю MongoDB: потрібні Node.js 18+ і запущена база.
 
 ```bash
 npm install

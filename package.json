@@ -5,6 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
+    "dev:local": "tsx scripts/dev-local.ts",
     "build": "tsc",
     "start": "node dist/index.js",
     "verify": "tsx scripts/verify.ts"
