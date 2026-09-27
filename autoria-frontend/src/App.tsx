@@ -45,10 +45,18 @@ export const App: React.FC = () => {
         setUser(null);
     };
 
-    const handleCreateAd = async (adData: any) => {
+    const handleCreateAd = async (adData: {
+        title: string;
+        description: string;
+        make: string;
+        model: string;
+        region: string;
+        originalPrice: number;
+        originalCurrency: string;
+    }) => {
         try {
-            await apiCall('/ads', {method: 'POST', body: JSON.stringify(adData)});
-            alert('Оголошення додано');
+            const data = await apiCall<{message: string}>('/ads', {method: 'POST', body: JSON.stringify(adData)});
+            alert(data.message || 'Оголошення додано');
             setIsFormOpen(false);
             await loadAds();
         } catch (err: unknown) {
@@ -57,12 +65,24 @@ export const App: React.FC = () => {
         }
     };
 
+    const handleUpgrade = async () => {
+        try {
+            const data = await apiCall<{message: string; token: string; user: User}>('/auth/upgrade-to-premium', {method: 'POST'});
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('user', JSON.stringify(data.user));
+            setUser(data.user);
+            alert(data.message);
+        } catch (err: unknown) {
+            alert(err instanceof Error ? err.message : 'Не вдалося оновити акаунт');
+        }
+    };
+
     const handleShowAnalytics = async (ad: CarAd) => {
         try {
             const res = await apiCall<AdAnalytics>(`/ads/${ad._id}/analytics`);
             setAnalytics(res);
-        } catch {
-            setAnalytics({views: ad.views, avgPriceRegion: ad.calculatedPrices.USD * 0.96, avgPriceUkraine: ad.calculatedPrices.USD * 0.98, regionName: ad.region,});
+        } catch (err: unknown) {
+            alert(err instanceof Error ? err.message : 'Аналітика доступна лише власнику з PREMIUM');
         }
     };
 
@@ -86,13 +106,7 @@ export const App: React.FC = () => {
                     return;
                 }
                 setIsFormOpen(true);
-            }} onLogout={handleLogout} accountType={user?.accountType} onSwitchAccount={(type) => {
-                if (user) {
-                    const updatedUser = {...user, accountType: type};
-                    setUser(updatedUser);
-                    localStorage.setItem('user', JSON.stringify(updatedUser));
-                }
-            }} onOpenLogin={() => setIsLoginOpen(true)}/>
+            }} onLogout={handleLogout} accountType={user?.accountType} onUpgrade={handleUpgrade} onOpenLogin={() => setIsLoginOpen(true)}/>
             <main style={{maxWidth: '1280px', margin: '0 auto', padding: '20px'}}>
                 <h1 style={{fontSize: '28px', marginBottom: '20px', fontWeight: 'bold'}}>Оголошення про продаж авто</h1>
                 {loading && (

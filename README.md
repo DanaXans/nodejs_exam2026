@@ -1,112 +1,187 @@
-AutoRia Clone:
-Full-stack проєкт платформи для продажу автомобілів.
+# AutoRia clone
 
-Технології:
-**Backend:** Node.js, Express, TypeScript, MongoDB, Mongoose, JWT  
-**Frontend:** React, TypeScript, Vite, Axios, Tailwind CSS  
-**Контейнеризація:** Docker, Docker Compose
+Платформа оголошень про продаж авто. Бекенд розрахований на те, що частини системи можна додавати, вимикати і змінювати без переписування ролей: доступ перевіряється через пермішини.
 
-Реалізовано:
+## Стек
 
-- реєстрація та авторизація користувачів;
-- ролі: `BUYER`, `SELLER`, `MANAGER`, `ADMIN`;
-- типи акаунтів: `BASIC` і `PREMIUM`;
-- створення, перегляд та видалення оголошень;
-- обмеження: BASIC-продавець може створити одне активне оголошення;
-- PREMIUM-продавець може створювати необмежену кількість оголошень;
-- перегляд аналітики оголошення для PREMIUM-акаунта;
-- перевірка оголошення на нецензурну лексику;
-- JWT-захист приватних API-запитів;
-- mock endpoint для імітації оновлення акаунта до PREMIUM;
-- Postman collection для перевірки API.
+- Backend: Node.js, Express, TypeScript, MongoDB, Mongoose, JWT
+- Frontend: React, TypeScript, Vite
+- Контейнери: Docker Compose (API + MongoDB). Образ можна віддати в AWS (ECS/Fargate або App Runner), база лишається окремим сервісом.
 
-Запуск:
+## Ролі і пермішини
 
-1. Backend
-   У кореневій папці проєкту:
+Роль лише видає стартовий набір прав. Конкретна дія перевіряє пермішин, а не `if (role === ...)`.
 
-```bash
-npm install
-```
+| Роль | Хто це | Як зʼявляється |
+| --- | --- | --- |
+| `BUYER` | Дивиться оголошення і пише продавцю про огляд або тест-драйв | Самостійна реєстрація |
+| `SELLER` | Виставляє авто | Самостійна реєстрація, це роль за замовчуванням |
+| `MANAGER` | Банить користувачів, видаляє невалідні оголошення, перевіряє підозрілі | Лише адміністратор, `POST /api/users/managers` |
+| `ADMIN` | Може все | Не реєструється. У базі вже є демо-адміністратор |
 
-Створи файл `.env`:
+Додаткові права лежать у `extraPermissions`. Так пізніше можна підключити автосалон: у салону свої люди (адмін салону, сейл, механік), але це не нові ролі платформи. Їм видають пермішини на кшталт `ad:create` або `dealership:staff:manage` і привʼязують `dealershipId`.
 
-```env
-PORT=5000
-MONGO_URI=your_mongodb_connection_string
-JWT_SECRET=your_secret_key
-CLIENT_URL=http://localhost:5173
-```
+Заготовка вже є:
 
-Запуск backend:
+- `POST /api/dealerships` — створити салон (лише адміністратор)
+- `POST /api/dealerships/:id/staff` — видати співробітнику обмежений список пермішинів салону
 
-```bash
-npm run dev
-```
+Статистика оголошень не є пермішином ролі. Це властивість типу акаунта `PREMIUM`.
 
-Backend працює на:
+## Типи акаунтів
 
-```text
-http://localhost:5000
-```
+- `BASIC` — у кожного продавця за замовчуванням. Одне оголошення у статусі `ACTIVE` або `PENDING_EDIT`. Статистики немає.
+- `PREMIUM` — купується. Оплата замокана: `POST /api/auth/upgrade-to-premium` нічого не списує, лише змінює тип. Кількість авто не обмежена. Доступні перегляди і середні ціни.
 
-2. Frontend
+## Оголошення
 
-```bash
-cd autoria-frontend
-npm install
-```
+1. Марка і модель беруться з каталогу (`GET /api/catalog/makes`). Якщо назви немає, продавець шле запит `POST /api/catalog/requests`, менеджер або адміністратор схвалює його.
+2. Ціна вказується в одній валюті: `USD`, `EUR` або `UAH`. Решта рахується за курсом ПриватБанку.
+3. Курс замокано і фіксується один раз на календарний день (часовий пояс Київ). На оголошенні зберігаються курс, дата і ціна, яку вказав продавець. Раз на день перераховані ціни підтягуються до актуального курсу, оригінальна ціна не змінюється.
+4. Текст проходить перевірку на нецензурну лексику.
+   - Чисто: статус `ACTIVE`, оголошення на платформі.
+   - Є заборонені слова: статус `PENDING_EDIT`, система просить виправити текст. Редагувати таке оголошення можна 3 рази.
+   - Після третього невдалого редагування статус `INACTIVE`, менеджеру пишеться лист (мок, лист лежить у `GET /api/moderation/emails`).
 
-Створи файл `autoria-frontend/.env`:
+Покупець пише продавцю через `POST /api/ads/:id/contact` (`VIEWING`, `TEST_DRIVE` або `QUESTION`).
 
-```env
-VITE_API_URL=http://localhost:5000/api
-```
+## Статистика PREMIUM
 
-Запуск frontend:
+`GET /api/ads/:id/analytics` віддає власнику з Premium:
 
-```bash
-npm run dev
-```
+- перегляди загалом, за 24 години, за 7 днів і за 30 днів;
+- середню ціну такої марки і моделі в регіоні продажу, у гривні;
+- середню ціну по Україні, у гривні.
 
-Frontend зазвичай працює на:
+Базовий продавець отримує `403`. Перегляди в публічному списку не показуються.
 
-```text
-http://localhost:5173
-```
+## Демо-користувачі
 
-Основні API endpoints
+Створюються автоматично при старті, якщо їх ще немає.
 
-| Метод  | Endpoint                       | Опис                      |
-|--------|--------------------------------|---------------------------|
-| POST   | `/api/auth/register`           | Реєстрація                |
-| POST   | `/api/auth/login`              | Авторизація               |
-| POST   | `/api/auth/upgrade-to-premium` | Mock-оновлення до PREMIUM |
-| GET    | `/api/ads`                     | Отримати оголошення       |
-| POST   | `/api/ads`                     | Створити оголошення       |
-| DELETE | `/api/ads/:id`                 | Видалити оголошення       |
-| GET    | `/api/ads/:id/analytics`       | Отримати аналітику        |
+| Email | Пароль | Роль |
+| --- | --- | --- |
+| `admin@autoria.local` | `Admin123!` | ADMIN |
+| `seller.premium@autoria.local` | `Seller123!` | SELLER, PREMIUM |
+| `seller.basic@autoria.local` | `Seller123!` | SELLER, BASIC |
+| `buyer@autoria.local` | `Buyer123!` | BUYER |
 
-(mock-оплата: авторизований користувач може оновити власний акаунт до PREMIUM через API.)
+У преміум-продавця вже є кілька BMW X5 і Daewoo Lanos з переглядами, щоб статистику було видно одразу.
 
-Для захищених endpoint-ів потрібно передати JWT:
+Щоб перевірити лайку, додайте в опис слово `блядь`.
 
-```text
-Authorization: Bearer YOUR_JWT_TOKEN
-```
+## Запуск через Docker
 
-Postman:
-Колекція запитів знаходиться у файлі:
-
-```text
-AutoRia_Postman_Collection.json
-```
-
-Її можна імпортувати через кнопку **Import** у Postman.
-
-Docker:
-Для запуску через Docker:
+Потрібні Docker і Docker Compose.
 
 ```bash
 docker compose up --build
 ```
+
+API: `http://localhost:5000`  
+MongoDB: `localhost:27017`
+
+Зупинка:
+
+```bash
+docker compose down
+```
+
+## Запуск без Docker
+
+Потрібні Node.js 18+ і MongoDB.
+
+```bash
+npm install
+cp .env.example .env
+npm run dev
+```
+
+У `.env`:
+
+```env
+PORT=5000
+MONGO_URI=mongodb://127.0.0.1:27017/autoria
+JWT_SECRET=change_me
+CLIENT_URL=http://localhost:5173
+```
+
+Перевірка сценаріїв з ТЗ без окремої MongoDB:
+
+```bash
+npm run verify
+```
+
+Продакшен-збірка:
+
+```bash
+npm run build
+npm start
+```
+
+Frontend:
+
+```bash
+cd autoria-frontend
+npm install
+npm run dev
+```
+
+Інтерфейс: `http://localhost:5173`. Він ходить на `http://localhost:5000/api`.
+
+## Postman
+
+Імпортуйте `AutoRia_Postman_Collection.json`. Змінна `base_url` вже `http://localhost:5000`.
+
+Порядок, який одразу перевіряє ТЗ:
+
+1. Папка **Auth** — увійти демо-користувачами. Скрипти самі кладуть токени в змінні колекції.
+2. **Catalog** — марки, моделі, регіони, курс, запит на відсутню марку і схвалення.
+3. **Ads** — список, створення, ліміт BASIC, лайка і 3 редагування, аналітика.
+4. **Moderation** — лист менеджеру і ручна активація.
+5. **Users** — створення менеджера і бан.
+6. **Dealerships** — заготовка під автосалон.
+7. **Contacts** — покупець пише продавцю.
+
+Для захищених запитів заголовок `Authorization: Bearer <token>`.
+
+## Що замокано
+
+- курс ПриватБанку (однаковий протягом доби, інший наступного дня);
+- оплата Premium;
+- лист менеджеру (консоль і `GET /api/moderation/emails`);
+- демо-користувачі, каталог і оголошення при першому запуску.
+
+Зовнішні сервіси для перевірки роботи не потрібні.
+
+## Основні ендпоінти
+
+| Метод | Шлях | Хто |
+| --- | --- | --- |
+| POST | `/api/auth/register` | Гість. Роль лише `BUYER` або `SELLER` |
+| POST | `/api/auth/login` | Гість |
+| GET | `/api/auth/me` | Будь-який користувач |
+| POST | `/api/auth/upgrade-to-premium` | Продавець |
+| POST | `/api/users/managers` | Адміністратор |
+| GET | `/api/users` | Менеджер, адміністратор |
+| PATCH | `/api/users/:id/ban` | Менеджер, адміністратор |
+| GET | `/api/catalog/makes` | Усі |
+| GET | `/api/catalog/makes/:make/models` | Усі |
+| GET | `/api/catalog/regions` | Усі |
+| GET | `/api/catalog/rates` | Усі |
+| POST | `/api/catalog/requests` | Продавець |
+| PATCH | `/api/catalog/requests/:id` | Менеджер, адміністратор |
+| GET | `/api/ads` | Усі, лише активні |
+| GET | `/api/ads/mine` | Продавець |
+| POST | `/api/ads` | Хто має `ad:create` |
+| GET | `/api/ads/:id` | Усі. Рахує перегляд |
+| PATCH | `/api/ads/:id` | Власник |
+| DELETE | `/api/ads/:id` | Власник, менеджер, адміністратор |
+| GET | `/api/ads/:id/analytics` | Власник з Premium або адміністратор |
+| POST | `/api/ads/:id/contact` | Покупець або продавець, не власник цього оголошення |
+| GET | `/api/contacts` | Учасник листування |
+| GET | `/api/moderation/ads` | Менеджер, адміністратор |
+| PATCH | `/api/moderation/ads/:id` | Менеджер, адміністратор. `ACTIVATE` або `REJECT` |
+| GET | `/api/moderation/emails` | Менеджер, адміністратор |
+| POST | `/api/dealerships` | Адміністратор |
+| POST | `/api/dealerships/:id/staff` | Адміністратор або адмін цього салону |
