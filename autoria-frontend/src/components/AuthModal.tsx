@@ -13,17 +13,25 @@ export const AuthModal: React.FC<AuthModalProps> = ({isOpen, isRegisterMode, onC
     const [email, setEmail] = React.useState('');
     const [password, setPassword] = React.useState('');
     const [loading, setLoading] = React.useState(false);
+    const [error, setError] = React.useState('');
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setError('');
+        if (password.length < 6) {
+            setError('Пароль має містити щонайменше 6 символів');
+            return;
+        }
         setLoading(true);
         try {
             await onSubmit(name, email, password);
-        } finally {
-            setLoading(false);
             setName('');
             setEmail('');
             setPassword('');
+        } catch (submitError) {
+            setError(submitError instanceof Error ? submitError.message : 'Не вдалося виконати запит');
+        } finally {
+            setLoading(false);
         }
     };
     if (!isOpen) return null;
@@ -37,8 +45,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({isOpen, isRegisterMode, onC
                     {isRegisterMode && (<input type="text" placeholder="Ваше ім'я" value={name} onChange={(e) => setName(e.target.value)} required style={{padding: '10px 12px', backgroundColor: '#3a3a3a', color: '#e0e0e0', border: '1px solid #404040', borderRadius: '6px', fontSize: '14px', fontFamily: 'inherit'}}/>)}
                     <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)}
                            required style={{padding: '10px 12px', backgroundColor: '#3a3a3a', color: '#e0e0e0', border: '1px solid #404040', borderRadius: '6px', fontSize: '14px', fontFamily: 'inherit'}}/>
-                    <input type="password" placeholder="Пароль" value={password}
-                           onChange={(e) => setPassword(e.target.value)} required style={{padding: '10px 12px', backgroundColor: '#3a3a3a', color: '#e0e0e0', border: '1px solid #404040', borderRadius: '6px', fontSize: '14px', fontFamily: 'inherit'}}/>
+                    <input type="password" placeholder="Пароль, мінімум 6 символів" value={password}
+                           onChange={(e) => setPassword(e.target.value)} required minLength={6} style={{padding: '10px 12px', backgroundColor: '#3a3a3a', color: '#e0e0e0', border: '1px solid #404040', borderRadius: '6px', fontSize: '14px', fontFamily: 'inherit'}}/>
+                    {error && <p style={{margin: 0, color: '#f87171', fontSize: '13px'}}>{error}</p>}
                     <button type="submit" disabled={loading} style={{padding: '10px 16px', backgroundColor: loading ? '#5a5a5a' : '#2b7dd4', color: 'white', border: 'none', borderRadius: '6px', cursor: loading ? 'not-allowed' : 'pointer', fontSize: '14px', fontWeight: '500', transition: 'all 0.2s'}}>
                         {loading ? 'Завантаження...' : (isRegisterMode ? 'Зареєструватися' : 'Увійти')}
                     </button>
