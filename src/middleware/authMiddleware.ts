@@ -71,6 +71,20 @@ export const optionalAuth = asyncHandler(async (req: AuthRequest, _res: Response
     next();
 });
 
+export const requireRole = (...roles: UserRole[]) => {
+    return (req: AuthRequest, _res: Response, next: NextFunction) => {
+        if (!req.auth) {
+            next(new HttpError(401, 'Користувач не авторизований'));
+            return;
+        }
+        if (!roles.includes(req.auth.role)) {
+            next(new HttpError(403, 'Недостатньо прав для цієї дії'));
+            return;
+        }
+        next();
+    };
+};
+
 export const requirePermission = (...needed: Permission[]) => {
     return (req: AuthRequest, _res: Response, next: NextFunction) => {
         if (!req.auth) {
